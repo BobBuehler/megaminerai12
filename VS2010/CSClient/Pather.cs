@@ -25,7 +25,7 @@ namespace CSClient
             //    f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
             var f_score = new Dictionary<Point, int>();
             f_score[start] = g_score[start] + h(start);
-     
+
             //    while openset is not empty
             while (openset.Count > 0)
             {
@@ -34,7 +34,19 @@ namespace CSClient
                 //        if current = goal
                 if (isGoal(current))
                 {
-                    //            return reconstruct_path(came_from, goal)
+                    //    if current_node in came_from
+                    //        p := reconstruct_path(came_from, came_from[current_node])
+                    //        return (p + current_node)
+                    //    else
+                    //        return current_node
+                    var path = new LinkedList<Point>();
+                    path.AddFirst(current);
+                    while (came_from.ContainsKey(current))
+                    {
+                        current = came_from[current];
+                        path.AddFirst(current);
+                    }
+                    return path;
                 }
 
                 //        remove current from openset
@@ -68,13 +80,6 @@ namespace CSClient
 
             //    return failure
             return null;
-
-            //function reconstruct_path(came_from, current_node)
-            //    if current_node in came_from
-            //        p := reconstruct_path(came_from, came_from[current_node])
-            //        return (p + current_node)
-            //    else
-            //        return current_node
         }
 
         public static IEnumerable<Point> GetNeighbors(Point p, BitArray passable)
