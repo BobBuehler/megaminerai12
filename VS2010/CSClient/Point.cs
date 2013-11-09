@@ -7,23 +7,29 @@ namespace CSClient
 {
     public struct Point
     {
-        public int X { get; set; }
-        public int Y { get; set; }
+        public int x;
+        public int y;
+
+        public Point(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
 
         public override int GetHashCode()
         {
-            return Y * 20 + X;
+            return y * 20 + x;
         }
 
         public override bool Equals(object obj)
         {
             Point other = (Point)obj;
-            return (X == other.X) && (Y == other.Y);
+            return (x == other.x) && (y == other.y);
         }
 
         public override string ToString()
         {
-            return String.Format("({0},{1})", X, Y);
+            return String.Format("({0},{1})", x, y);
         }
     }
 }

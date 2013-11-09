@@ -8,7 +8,7 @@ namespace CSClient
 {
     // Pump station is multiple tiles, need list of pump station bitboards
     /* Bit Boards */
-    public static class Bb
+    static class Bb
     {
         public static int maxX; // (0, 0) is the top-left corner
         public static int maxY;
