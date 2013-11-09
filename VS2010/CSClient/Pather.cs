@@ -92,7 +92,7 @@ namespace CSClient
                 new Point(p.x, p.y + 1)
             };
 
-            return neighbors.Where(n => n.x >= 0 && n.x < 40 && n.y >= 0 && n.y < 20 && passable.Get(n));
+            return neighbors.Where(n => n.x >= 0 && n.x < Bb.maxX && n.y >= 0 && n.y < Bb.maxY && passable.Get(n));
         }
     }
 }
