@@ -12,7 +12,7 @@ public class Program
             Bb.maxX = 5;
             Bb.maxY = 5;
 
-            Point start = new Point();
+            Point[] starts = { new Point() };
             Func<Point, bool> isGoal = p => p.x == 4 && p.y == 4;
             BitArray passable = new BitArray(new bool[] {
                 true, false, true, true, true,
@@ -22,7 +22,7 @@ public class Program
                 true, true, true, true, true,
             });
 
-            var path = Pather.AStar(start, isGoal, passable, (c, n) => n.x == 0 ? 1 : 0, p => 0);
+            var path = Pather.AStar(starts, isGoal, passable, (c, n) => n.x == 0 ? 1 : 0, p => 0);
             foreach (Point p in path)
             {
                 Console.WriteLine(p);
