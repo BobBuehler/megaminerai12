@@ -36,20 +36,30 @@
   <ItemGroup>
     <Compile Include="..\..\AI.cs" />
     <Compile Include="..\..\BaseAI.cs" />
+    <Compile Include="..\..\Bb.cs">
+      <Link>Bb.cs</Link>
+    </Compile>
     <Compile Include="..\..\Client.cs" />
     <Compile Include="..\..\ExistentialError.cs" />
+    <Compile Include="..\..\Extensions.cs">
+      <Link>Extensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Main.cs" />
     <Compile Include="..\..\Mappable.cs" />
+    <Compile Include="..\..\Pather.cs">
+      <Link>Pather.cs</Link>
+    </Compile>
     <Compile Include="..\..\Player.cs" />
+    <Compile Include="..\..\Point.cs">
+      <Link>Point.cs</Link>
+    </Compile>
     <Compile Include="..\..\PumpStation.cs" />
+    <Compile Include="..\..\Solver.cs">
+      <Link>Solver.cs</Link>
+    </Compile>
     <Compile Include="..\..\Tile.cs" />
     <Compile Include="..\..\Unit.cs" />
     <Compile Include="..\..\UnitType.cs" />
-    <Compile Include="Bb.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Pather.cs" />
-    <Compile Include="Point.cs" />
-    <Compile Include="Solver.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

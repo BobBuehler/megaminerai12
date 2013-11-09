@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using CSClient;
 
 /// <summary>
 /// The class implementing gameplay logic.
