@@ -28,10 +28,10 @@ public class AI : BaseAI
     public override bool run()
     {
         Func<Point, Point, int> Manhattan = (a, b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
-        Func<IEnumerable<Point>, IEnumerable<Point>, Tuple<Point, Point>> Closest = (starts, goals) =>
+        Func<IEnumerable<Point>, IEnumerable<Point>, Point> Closest = (starts, goals) =>
         {
-            var pairs = starts.SelectMany(s => goals.Select(g => Tuple.Create(s, g)));
-            return pairs.minByValue(p => Manhattan(p.Item1, p.Item2));
+            var pairs = starts.SelectMany(s => goals.Select(g => new { start = s, goal = g }));
+            return pairs.minByValue(p => Manhattan(p.start, p.goal)).start;
         };
 
         int workerCost = Int32.MaxValue;
@@ -52,15 +52,14 @@ public class AI : BaseAI
                 tankCost = unitTypes[j].Cost;
 
         // Spawn Stuffs
-        Tuple<Point, Point> startEnd;
         if (Bb.OurUnits.Count < maxUnits())
         {
             // If there is enough oxygen to spawn the unit...
             while (players[playerID()].Oxygen >= scoutCost)
             {
-                startEnd = Closest(Bb.OurSpawnSet, Bb.TheirPumpSet);
-                tiles[Bb.GetOffset(startEnd.Item1.x, startEnd.Item1.y)].spawn((int)Types.Scout);
-                Bb.OurSpawnSet.Remove(startEnd.Item1);
+                var start = Closest(Bb.OurSpawnSet, Bb.TheirPumpSet);
+                tiles[Bb.GetOffset(start.x, start.y)].spawn((int)Types.Scout);
+                Bb.OurSpawnSet.Remove(start);
             }
         }
 
