@@ -49,6 +49,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Pather.cs" />
     <Compile Include="Point.cs" />
+    <Compile Include="Solver.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
