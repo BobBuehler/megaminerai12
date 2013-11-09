@@ -8,23 +8,22 @@ namespace CSClient
 {
     public static class Pather
     {
-        public static IEnumerable<Point> AStar(Point start, Func<Point, bool> isGoal, BitArray passable, Func<Point, Point, int> c, Func<Point, int> h)
+        public static IEnumerable<Point> AStar(IEnumerable<Point> starts, Func<Point, bool> isGoal, BitArray passable, Func<Point, Point, int> c, Func<Point, int> h)
         {
             //    closedset := the empty set    // The set of nodes already evaluated.
             var closedset = new HashSet<Point>();
             //    openset := {start}    // The set of tentative nodes to be evaluated, initially containing the start node
-            var openset = new HashSet<Point>();
-            openset.Add(start);
+            var openset = new HashSet<Point>(starts);
             //    came_from := the empty map    // The map of navigated nodes.
             var came_from = new Dictionary<Point, Point>();
 
             //    g_score[start] := 0    // Cost from start along best known path.
             var g_score = new Dictionary<Point, int>();
-            g_score[start] = 0;
+            starts.ForEach(s => g_score[s] = 0);
             //    // Estimated total cost from start to goal through y.
             //    f_score[start] := g_score[start] + heuristic_cost_estimate(start, goal)
             var f_score = new Dictionary<Point, int>();
-            f_score[start] = g_score[start] + h(start);
+            starts.ForEach(s => f_score[s] = h(s));
 
             //    while openset is not empty
             while (openset.Count > 0)
