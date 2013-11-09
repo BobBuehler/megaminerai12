@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 /// <summary>
 /// The class implementing gameplay logic.
 /// </summary>
-class AI : BaseAI
+public class AI : BaseAI
 {
   // Enum for types of units you can spawn.
   enum Types { Worker, Scout, Tank };

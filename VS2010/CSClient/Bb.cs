@@ -10,7 +10,7 @@ namespace CSClient
     // ./run r99acm.device.mst.edu <gamenum>
     // Pump station is multiple tiles, need list of pump station bitboards
     /* Bit Boards */
-    static class Bb
+    public static class Bb
     {
         public static int maxX; // (0, 0) is the top-left corner
         public static int maxY;
