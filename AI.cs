@@ -16,7 +16,7 @@ class AI : BaseAI
 
   public override string password()
   {
-    return "password";
+    return "supersecret";
   }
 
   /// <summary>
