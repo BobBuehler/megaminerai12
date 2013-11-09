@@ -33,6 +33,17 @@ public class Unit: Mappable
     throw new ExistentialError();
   }
 
+  public override int GetHashCode()
+  {
+      return Y * 20 + X;
+  }
+
+  public override bool Equals(object obj)
+  {
+      Unit other = (Unit)obj;
+      return (X == other.X) && (Y == other.Y);
+  }
+
   #region Commands
   /// <summary>
   /// Make the unit move to the respective x and y location.
