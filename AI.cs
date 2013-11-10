@@ -25,6 +25,8 @@ public class AI : BaseAI
         return "supersecret";
     }
 
+    public Dictionary<int, Point> tankReturn = new Dictionary<int, Point>();
+
     /// <summary>
     /// This function is called each time it is your turn.
     /// </summary>
@@ -139,14 +141,29 @@ public class AI : BaseAI
                 }
                 else if (u.Type == (int)Types.Tank)
                 {
+                    if (tankReturn.ContainsKey(u.Id))
+                    {
+                        var r = tankReturn[u.Id];
+                        if (Solver.GetPassable().Get(r))
+                        {
+                            u.move(r.x, r.y);
+                            tankReturn.Remove(u.Id);
+                        }
+                        Solver.Attack(u);
+                    }
                     // Check whether our pump is pumping and move/die if it isn't
-                    if (!ourOwnedPumpingPumps.SelectMany(p => p.GetPoints()).Contains(u.ToPoint()))
+                    else if (!ourOwnedPumpingPumps.SelectMany(p => p.GetPoints()).Contains(u.ToPoint()))
                     {
                         Solver.Move(u, Bb.Water, walkInWater: true);
                     }
-                    else
+                    else if (!Solver.Attack(u))
                     {
-                        Solver.Attack(u);
+                        var r = u.ToPoint();
+                        Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
+                        if (!r.Equals(u.ToPoint()))
+                        {
+                            tankReturn[u.Id] = r;
+                        }
                     }
                 }
             }
@@ -252,7 +269,7 @@ public class AI : BaseAI
         }
         Console.WriteLine("Spawning " + maxTanks + " tanks");
         bool spawned = true;
-        while (players[playerID()].Oxygen >= 15 && Bb.OurTanksSet.Count <= maxTanks && spawned)
+        while (players[playerID()].Oxygen >= 15 && Bb.OurTanksSet.Count < maxTanks && spawned)
         {
             var start = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
             spawned = Bb.tileLookup[start].spawn((int)Types.Tank);
