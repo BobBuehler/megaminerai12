@@ -39,36 +39,33 @@ public static class Digger
 
     public static bool MoveAndDig(Unit digger, IEnumerable<Point> targets)
     {
-        var digworhty = GetDiggableAndUnDug();
-        if (Dig(digger, targets, digworhty))
-        {
-            return true;
-        }
+        Bb.ReadBoard();
+        var passable = Solver.GetPassable();
+        var moveTargets = targets.SelectMany(t => Pather.GetNeighbors(t, passable)).ToBitArray();
+        moveTargets.And(targets.ToBitArray().Not());
 
         if (digger.MovementLeft == 0)
         {
+            if (Dig(digger, targets, GetDiggableAndUnDug()))
+            {
+                return true;
+            }
             return false;
         }
 
-        var steps = Solver.GetWalkingSteps(digger.ToPoint(), targets.ToBitArray());
+        var steps = Solver.GetWalkingSteps(digger.ToPoint(), moveTargets);
         if (steps == null)
         {
             return false;
         }
-        var target = steps.Last.Value;
-        steps.RemoveLast();
         foreach (var step in steps)
         {
             if (digger.MovementLeft > 0)
             {
                 digger.move(step.x, step.y);
             }
-            else
-            {
-                return false;
-            }
         }
-        digger.dig(Bb.tileLookup[target]);
+        Dig(digger, targets, GetDiggableAndUnDug());
         return true;
     }
 }
