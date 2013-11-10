@@ -32,14 +32,20 @@ public static class Solver
         }
         Point[] starts = { start };
         var passable = Solver.GetPassable(walkInWater);
-        passable.Set(start, true);
-        var route = Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0);
+        var aStarPassable = new BitArray(passable);
+        aStarPassable.Set(start, true);
+        aStarPassable.Or(goals);
+        var route = Pather.AStar(starts, p => goals.Get(p), aStarPassable, (c, n) => 1, p => 0);
         if (route == null)
         {
             return null;
         }
         var steps = new LinkedList<Point>(route);
         steps.RemoveFirst();
+        if (steps.Count > 0 && !passable.Get(steps.Last.Value))
+        {
+            steps.RemoveLast();
+        }
         return steps;
     }
 
