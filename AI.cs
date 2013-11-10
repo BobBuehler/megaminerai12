@@ -152,7 +152,7 @@ public class AI : BaseAI
                     stage = 2;
                 }
             }
-            else if (stage == 2)
+            else if (stage == 2 && BaseAI.players[Bb.usId].WaterStored <= BaseAI.players[Bb.themId].WaterStored)
             {
                 // Stage two
                 // Spawn 4 tanks and move them to one pump
@@ -162,6 +162,11 @@ public class AI : BaseAI
                 SpawnWorker(CalcSpawnPoint);
                 // Have worker maintain the trench until empty
                 MaintainTrench();
+            }
+            if (Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump)).Count() > 0)
+            {
+                stage = 1;
+                finalStageCounter = 0;
             }
         }
 
@@ -176,6 +181,7 @@ public class AI : BaseAI
             if (finalPump.station.Owner != Bb.usId)
             {
                 // Go capture it
+                Console.WriteLine("Worker capturing pump");
                 Solver.Move(worker, finalPump.GetBitArray());
             }
             else
@@ -183,9 +189,11 @@ public class AI : BaseAI
                 // Maintain trench
                 // Dig it if it doesn't exit
                 // Dig shallowest otherwise
+                Console.WriteLine("Worker digging holes");
                 var neededPoints = Digger.GetNeededTrenches(finalPump);
                 Digger.MoveAndDig(worker, neededPoints);
             }
+            Bb.ReadBoard();
         }
     }
 
@@ -193,6 +201,7 @@ public class AI : BaseAI
     {
         if (Bb.OurWorkersSet.Count == 0 && players[playerID()].Oxygen >= 10)
         {
+            Console.WriteLine("Spawning worker");
             var start = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
             Bb.tileLookup[start].spawn((int)Types.Worker);
         }
@@ -201,6 +210,7 @@ public class AI : BaseAI
 
     private void MoveTanksToPump()
     {
+        Console.WriteLine("Moving tanks to pump");
         foreach (Unit u in Bb.OurTanksSet)
         {
             Solver.Move(u, finalPump.GetBitArray());
@@ -226,10 +236,12 @@ public class AI : BaseAI
         {
             maxTanks = 3;
         }
-        while (players[playerID()].Oxygen >= 15 && Bb.OurTanksSet.Count <= maxTanks)
+        Console.WriteLine("Spawning " + maxTanks + " tanks");
+        bool spawned = true;
+        while (players[playerID()].Oxygen >= 15 && Bb.OurTanksSet.Count <= maxTanks && spawned)
         {
             var start = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
-            Bb.tileLookup[start].spawn((int)Types.Tank);
+            spawned = Bb.tileLookup[start].spawn((int)Types.Tank);
             Bb.ReadBoard();
         }
     }
