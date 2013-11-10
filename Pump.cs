@@ -30,8 +30,6 @@ public class Pump
 
     public BitArray GetBitArray()
     {
-        var bits = new BitArray(Bb.size);
-        GetPoints().ForEach(p => bits.Set(p, true));
-        return bits;
+        return GetPoints().ToBitArray();
     }
 }
