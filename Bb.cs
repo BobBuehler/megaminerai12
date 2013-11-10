@@ -62,6 +62,34 @@ public static class Bb
         init = true;
 
         ReadBoard();
+
+        Print(OurSpawnSet);
+    }
+
+    private static void Print(HashSet<Point> points)
+    {
+        string str = "Empty";
+        if (points.Count > 0)
+        {
+            str = "";
+            foreach (Point p in points)
+            {
+                str += "(" + p.x + ", " + p.y + ") ";
+            }
+        }
+        Console.WriteLine(str);
+    }
+
+    private static void Print(Tile tile)
+    {
+        string str = "";
+        str += "Tile (" + tile.X + ", " + tile.Y + ")";
+        str += "\nOwner: " + tile.Owner;
+        str += "\nID: " + tile.Id;
+        str += "\nDepth: " + tile.Depth;
+        str += "\nWater: " + tile.WaterAmount;
+        str += "\nPumpID: " + tile.PumpID;
+        Console.WriteLine(str + "\n");
     }
 
     public static void ReadBoard()
@@ -85,7 +113,7 @@ public static class Bb
             }
 
             // Water
-            if (tile.WaterAmount > 0 && tile.Owner != 3 && tile.Depth > 0)
+            if (tile.WaterAmount > 0 && tile.Depth > 0)
             {
                 Water[offset] = true;
                 WaterSet.Add(point);
@@ -128,10 +156,13 @@ public static class Bb
             if (tile.Owner == usId)
             {
                 OurTiles[offset] = true;
+                OurSpawnSet.Add(point);
+                Print(tile);
             }
             else if (tile.Owner == themId)
             {
                 TheirTiles[offset] = true;
+                TheirSpawnSet.Add(point);
             }
         }
         Console.WriteLine("Looking through units now.");
@@ -158,6 +189,10 @@ public static class Bb
                 {
                     OurTanksSet.Add(unit);
                 }
+                if (OurSpawnSet.Contains(point))
+                {
+                    OurSpawnSet.Remove(point);
+                }
             }
 
             // Their Units
@@ -176,6 +211,10 @@ public static class Bb
                 else if (unit.Type == 2) // Tank
                 {
                     TheirTanksSet.Add(unit);
+                }
+                if (TheirSpawnSet.Contains(point))
+                {
+                    TheirSpawnSet.Remove(point);
                 }
             }
         }
