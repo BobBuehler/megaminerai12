@@ -34,4 +34,9 @@ public static class Solver
             steps--;
         }
     }
+
+    public static bool IsPumping(Pump pump)
+    {
+        return false;
+    }
 }
