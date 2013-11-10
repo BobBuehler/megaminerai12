@@ -22,11 +22,11 @@ public static class Solver
         return spawning.ToBitArray().Or(impassible).Not();
     }
 
-    public static LinkedList<Point> GetWalkingSteps(Point p, BitArray goals, bool walkInWater = false)
+    public static LinkedList<Point> GetWalkingSteps(Point start, BitArray goals, bool walkInWater = false)
     {
-        Point[] starts = { p };
+        Point[] starts = { start };
         var passable = Solver.GetPassable(walkInWater);
-        passable.Set(p, true);
+        passable.Set(start, true);
         var route = Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0);
         if (route == null)
         {
