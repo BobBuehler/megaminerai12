@@ -72,6 +72,15 @@ public static class Solver
         return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
     }
 
+    public static bool WillBePumping(Pump pump)
+    {
+        var starts = pump.GetPoints();
+        var goals = Bb.Glaciers;
+        var passable = new BitArray(Bb.Water).Or(starts.ToBitArray()).Or(goals).Or(Bb.Trenches);
+
+        return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
+    }
+
     public static bool Attack(Unit attacker)
     {
         return Attack(attacker, Bb.TheirUnitsSet);
