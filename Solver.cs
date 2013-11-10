@@ -73,20 +73,20 @@ public static class Solver
         }
     }
 
-    public static bool WillBePumping(Pump pump)
-    {
-        var starts = pump.GetPoints();
-        var goals = Bb.GlaciersSet.Where(g => Bb.tileLookup[g].WaterAmount > 6).ToBitArray();
-        var passable = new BitArray(Bb.Water).Or(Bb.Trenches).Or(starts.ToBitArray()).Or(goals);
-
-        return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
-    }
-
     public static bool IsPumping(Pump pump)
     {
         var starts = pump.GetPoints();
         var goals = Bb.GlaciersSet.Where(g => Bb.tileLookup[g].WaterAmount > 6).ToBitArray();
         var passable = new BitArray(Bb.Water).Or(starts.ToBitArray()).Or(goals);
+
+        return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
+    }
+
+    public static bool WillBePumping(Pump pump)
+    {
+        var starts = pump.GetPoints();
+        var goals = Bb.Glaciers;
+        var passable = new BitArray(Bb.Water).Or(starts.ToBitArray()).Or(goals).Or(Bb.Trenches);
 
         return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
     }

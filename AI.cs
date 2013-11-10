@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections;
 
 /// <summary>
 /// The class implementing gameplay logic.
@@ -40,65 +41,60 @@ public class AI : BaseAI
             return pairs.minByValue(p => Manhattan(p.start, p.goal)).start;
         };
 
-        var pumpingPumpsSet = Bb.TheirPumpSet.Where(p => Solver.IsPumping(p)).SelectMany(p => p.GetPoints());
-        var pumpingPumps = pumpingPumpsSet.ToBitArray();
 
-        var notPumpingPumpsSet = Bb.OurPumpSet.Where(p => !Solver.IsPumping(p)).SelectMany(p => p.GetPoints());
-        var notPumpingPumps = pumpingPumpsSet.ToBitArray();
+        // if I can tank
+        //   Loop over our pumping pumps
+        //     it it doesn't have a tank
+        //       try to spawn a tank
+        // while I can afford scouts
+        //   spawn a scout
 
-        // Spawn Stuffs
-        if (Bb.OurUnitsSet.Count < maxUnits())
+        var spawnable = Bb.GetOurSpawnable();
+
+        if (players[playerID()].Oxygen >= tankCost)
         {
-            var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
-            if (true)//(Bb.OurPumpSet.Count < 3 && Bb.OurScoutsSet.Count < 4)
+            var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
+            foreach (Pump pump in ourPumpingPumps)
             {
-                while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0) && (Bb.OurScoutsSet.Count < 4))
+                var pumpPoints = new HashSet<Point>(pump.GetPoints());
+                var tanksOnPump = Bb.OurTanksSet.Where(t => pumpPoints.Contains(t.ToPoint()));
+                if (!tanksOnPump.Any())
                 {
-                    var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
-                    Bb.tileLookup[start].spawn((int)Types.Scout);
-                    ourSpawnable.Remove(start);
+                    var openPoints = pumpPoints.Where(p => spawnable.Get(p));
+                    if (openPoints.Any())
+                    {
+                        Bb.tileLookup[openPoints.First()].spawn((int)Types.Tank);
+                    }
+                }
+                if (players[playerID()].Oxygen < tankCost)
+                {
+                    break;
                 }
             }
-            //if (Bb.OurPumpSet.Count == 0)
-            //{
-            //    while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
-            //    {
-            //        var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
-            //        Bb.tileLookup[start].spawn((int)Types.Scout);
-            //        ourSpawnable.Remove(start);
-            //    }
-            //}
-            var spawnableNotPumping = new HashSet<Point>(ourSpawnable.ToBitArray().And(notPumpingPumps).ToPoints());
-            //if ((Bb.OurPumpSet.Count <= 3) && (notPumpingPumpsSet.Count() != 0))
-            //{
-            //    while ((players[playerID()].Oxygen >= workerCost) && (spawnableNotPumping.Count != 0) && (Bb.GlaciersSet.Count != 0))
-            //    {
-            //        var start = CalcSpawnPoint(spawnableNotPumping, Bb.Glaciers.ToPoints());
-            //        Bb.tileLookup[start].spawn((int)Types.Worker);
-            //        ourSpawnable.Remove(start);
-            //        spawnableNotPumping.Remove(start);
-            //    }
-            //}
         }
 
-        //Func<Point, IEnumerable<Pump>, Pump> CalcNearestPump = (start, goals) =>
-        //{
+        var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
+        while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
+        {
+            var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
+            Bb.tileLookup[start].spawn((int)Types.Scout);
+            ourSpawnable.Remove(start);
+        }
 
-            
-        //    return goals.minByValue(g => Manhattan(start, g.GetPoints()));
-        //};
+        Bb.ReadBoard();
+
+
+        var theirPumpingPumps = Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump));
+        var theirPumpingPumpsBits = theirPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
 
         // Do Stuffs For Each Unit
         foreach (Unit u in Bb.OurUnitsSet)
         {
-            // If you don't own the unit, ignore it.
-            if (u.Owner != playerID())
-                continue;
             if (u.Type == (int)Types.Scout)
             {
-                if (pumpingPumpsSet.Count() != 0)
+                if (theirPumpingPumps.Count() != 0)
                 {
-                    Solver.Move(u, pumpingPumps);
+                    Solver.Move(u, theirPumpingPumpsBits);
                     Solver.Attack(u);
                 }
                 else if (Bb.TheirPumpSet.Count != 0)
@@ -116,6 +112,7 @@ public class AI : BaseAI
             }
             else if (u.Type == (int)Types.Tank)
             {
+                Solver.Attack(u);
             }
         }
         return true;
