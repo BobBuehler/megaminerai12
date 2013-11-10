@@ -24,9 +24,14 @@ public static class Extensions
         return min;
     }
 
+    public static bool Get(this BitArray b, int x, int y)
+    {
+        return b.Get(Bb.GetOffset(x, y));
+    }
+
     public static bool Get(this BitArray b, Point p)
     {
-        return b.Get(Bb.GetOffset(p.x, p.y));
+        return b.Get(p.x, p.y);
     }
 
     public static void Set(this BitArray b, int x, int y, bool value)
@@ -60,7 +65,24 @@ public static class Extensions
     public static BitArray ToBitArray(this IEnumerable<Point> points)
     {
         var bits = new BitArray(Bb.size);
-        points.ForEach(p => bits.Set(p, true));
+        points.ForEach(p =>
+            {
+                bits.Set(p, true);
+            });
         return bits;
+    }
+
+    public static IEnumerable<Point> ToPoints(this BitArray bits)
+    {
+        for (int x = 0; x <= Bb.maxX; ++x)
+        {
+            for (int y = 0; y <= Bb.maxY; ++y)
+            {
+                if (bits.Get(x, y))
+                {
+                    yield return new Point(x, y);
+                }
+            }
+        }
     }
 }

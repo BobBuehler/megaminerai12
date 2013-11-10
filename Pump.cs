@@ -6,14 +6,15 @@ using System.Collections;
 
 public class Pump
 {
-    PumpStation station;
-    Point NW;
-    Point NE;
-    Point SW;
-    Point SE;
+    public PumpStation station;
+    public Point NW;
+    public Point NE;
+    public Point SW;
+    public Point SE;
 
     public Pump(PumpStation station, Point nw)
     {
+        this.station = station;
         NW = nw;
         NE = new Point(nw.x + 1, nw.y);
         SW = new Point(nw.x, nw.y + 1);

@@ -39,11 +39,12 @@ public class AI : BaseAI
         // Spawn Stuffs
         if (Bb.OurUnitsSet.Count < maxUnits())
         {
-            while (players[playerID()].Oxygen >= 12)
+            var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
+            while (ourSpawnable.Count > 0 && players[playerID()].Oxygen >= 12)
             {
-                var start = CalcSpawnPoint(Bb.OurSpawnSet, Bb.TheirPumpSet);
-                tiles[Bb.GetOffset(start.x, start.y)].spawn((int)Types.Scout);
-                Bb.OurSpawnSet.Remove(start);
+                var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
+                Console.WriteLine(tiles[Bb.GetOffset(start.x, start.y)].spawn((int)Types.Scout));
+                ourSpawnable.Remove(start);
             }
         }
 
@@ -53,7 +54,7 @@ public class AI : BaseAI
             // If you don't own the unit, ignore it.
             if (i.Owner != playerID())
                 continue;
-            Solver.Walk(i, Bb.TheirPumps);
+            Solver.Move(i, Bb.TheirPumps);
         }
         return true;
     }

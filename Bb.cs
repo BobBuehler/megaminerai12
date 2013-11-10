@@ -16,27 +16,20 @@ public static class Bb
     public static int usId;
     public static int themId;
 
-    public static BitArray OurPumps;
-    public static BitArray TheirPumps;
-    public static BitArray NeutralPumps;
-    public static BitArray OurTiles;
-    public static BitArray TheirTiles;
-    public static BitArray OurSpawns;
-    public static BitArray TheirSpawns;
     public static BitArray Glaciers;
     public static BitArray Trenches;
     public static BitArray Water;
+    public static BitArray OurSpawns;
+    public static BitArray TheirSpawns;
     public static BitArray OurUnits;
     public static BitArray TheirUnits;
+    public static BitArray OurPumps;
+    public static BitArray TheirPumps;
+    public static BitArray NeutralPumps;
 
-    public static HashSet<Point> OurPumpSet;
-    public static HashSet<Point> TheirPumpSet;
-    public static HashSet<Point> NeutralPumpSet; // May be able to ignore?
     public static HashSet<Point> OurSpawnSet;
     public static HashSet<Point> TheirSpawnSet;
     public static HashSet<Point> GlaciersSet;
-    public static HashSet<Point> TrenchesSet;
-    public static HashSet<Point> WaterSet;
 
     public static HashSet<Unit> OurUnitsSet;
     public static HashSet<Unit> TheirUnitsSet;
@@ -46,6 +39,12 @@ public static class Bb
     public static HashSet<Unit> TheirScoutsSet;
     public static HashSet<Unit> OurTanksSet;
     public static HashSet<Unit> TheirTanksSet;
+
+    public static HashSet<Pump> OurPumpSet;
+    public static HashSet<Pump> TheirPumpSet;
+    public static HashSet<Pump> NeutralPumpSet; // May be able to ignore?
+
+    public static Dictionary<Point, Tile> tileLookup;
 
     private static bool init = false;
 
@@ -100,24 +99,12 @@ public static class Bb
         }
         Reset();
 
+        tileLookup = BaseAI.tiles.ToDictionary(t => t.ToPoint());
+
         foreach (Tile tile in BaseAI.tiles)
         {
             int offset = GetOffset(tile.X, tile.Y);
             Point point = new Point(tile.X, tile.Y);
-
-            // Trenches
-            if (tile.Depth > 0 && tile.WaterAmount == 0)
-            {
-                Trenches[offset] = true;
-                TrenchesSet.Add(point);
-            }
-
-            // Water
-            if (tile.WaterAmount > 0 && tile.Depth > 0)
-            {
-                Water[offset] = true;
-                WaterSet.Add(point);
-            }
 
             // Glaciers
             if (tile.Depth == 0 && tile.WaterAmount > 0 && tile.Owner == 3)
@@ -126,47 +113,52 @@ public static class Bb
                 GlaciersSet.Add(point);
             }
 
-            // Pumping Stations
-            if (tile.PumpID != -1)
+            // Trenches
+            if (tile.Depth > 0 && tile.WaterAmount == 0)
             {
-                foreach (PumpStation station in BaseAI.pumpStations)
-                {
-                    if (station.Id == tile.PumpID)
-                    {
-                        if (station.Owner == usId)
-                        {
-                            OurPumps[offset] = true;
-                            OurPumpSet.Add(point);
-                        }
-                        else if (station.Owner == themId)
-                        {
-                            TheirPumps[offset] = true;
-                            TheirPumpSet.Add(point);
-                        }
-                        else
-                        {
-                            NeutralPumps[offset] = true;
-                            NeutralPumpSet.Add(point);
-                        }
-                    }
-                }
+                Trenches[offset] = true;
             }
 
-            // Spawn Tiles
-            if (tile.Owner == usId)
+            // Water
+            if (tile.Depth > 0 && tile.WaterAmount > 0)
             {
-                OurTiles[offset] = true;
-                OurSpawnSet.Add(point);
-                Print(tile);
+                Water[offset] = true;
             }
-            else if (tile.Owner == themId)
+
+            // Our Spawns
+            if (tile.Owner == usId && tile.PumpID == -1)
             {
-                TheirTiles[offset] = true;
+                OurSpawns[offset] = true;
+                OurSpawnSet.Add(point);
+            }
+
+            // Their Spawns
+            if (tile.Owner == themId && tile.PumpID == -1)
+            {
+                TheirSpawns[offset] = true;
                 TheirSpawnSet.Add(point);
             }
+
+            // Our Pumps
+            if (tile.Owner == usId && tile.PumpID != -1)
+            {
+                OurPumps[offset] = true;
+            }
+
+            // Their Pumps
+            if (tile.Owner == themId && tile.PumpID != -1)
+            {
+                TheirPumps[offset] = true;
+            }
+
+            // Neutral Pumps
+            if (tile.Owner == 2 && tile.PumpID != -1)
+            {
+                NeutralPumps[offset] = true;
+            }
         }
-        Console.WriteLine("Looking through units now.");
-        // All Units
+
+        // Units
         foreach (Unit unit in BaseAI.units)
         {
             Point point = new Point(unit.X, unit.Y);
@@ -175,62 +167,66 @@ public static class Bb
             // Our Units
             if (unit.Owner == usId)
             {
-                OurUnitsSet.Add(unit);
                 OurUnits[offset] = true;
-                if (unit.Type == 0) // Worker
+                OurUnitsSet.Add(unit);
+                switch (unit.Type)
                 {
-                    OurWorkersSet.Add(unit);
-                }
-                else if (unit.Type == 1) // Scout
-                {
-                    OurScoutsSet.Add(unit);
-                }
-                else if (unit.Type == 2) // Tank
-                {
-                    OurTanksSet.Add(unit);
-                }
-                if (OurSpawnSet.Contains(point))
-                {
-                    OurSpawnSet.Remove(point);
+                    case 0: OurWorkersSet.Add(unit); break;
+                    case 1: OurScoutsSet.Add(unit); break;
+                    case 2: OurTanksSet.Add(unit); break;
                 }
             }
 
             // Their Units
             if (unit.Owner == themId)
             {
-                TheirUnitsSet.Add(unit);
                 TheirUnits[offset] = true;
-                if (unit.Type == 0) // Worker
+                TheirUnitsSet.Add(unit);
+                switch (unit.Type)
                 {
-                    TheirWorkersSet.Add(unit);
-                }
-                else if (unit.Type == 1) // Scout
-                {
-                    TheirScoutsSet.Add(unit);
-                }
-                else if (unit.Type == 2) // Tank
-                {
-                    TheirTanksSet.Add(unit);
-                }
-                if (TheirSpawnSet.Contains(point))
-                {
-                    TheirSpawnSet.Remove(point);
+                    case 0: TheirWorkersSet.Add(unit); break;
+                    case 1: TheirScoutsSet.Add(unit); break;
+                    case 2: TheirTanksSet.Add(unit); break;
                 }
             }
         }
 
-        string str = "Empty";
-        if (OurUnitsSet.Count > 0)
+        var pumps = new BitArray(OurPumps).Or(TheirPumps).Or(NeutralPumps);
+        var pumpLookup = BaseAI.pumpStations.ToDictionary(p => p.Id);
+        foreach (var p in pumps.ToPoints())
         {
-            str = "";
-            foreach (Unit u in OurUnitsSet)
+            var tile = tileLookup[p];
+            if (!pumpLookup.ContainsKey(tile.PumpID))
             {
-                str += u.Type + " ";
+                continue;
+            }
+            var ps = pumpLookup[tile.PumpID];
+            pumpLookup.Remove(ps.Id);
+
+            var pump = new Pump(ps, p);
+            if (tile.Owner == usId)
+            {
+                OurPumpSet.Add(pump);
+            }
+            else if (tile.Owner == themId)
+            {
+                TheirPumpSet.Add(pump);
+            }
+            else
+            {
+                NeutralPumpSet.Add(pump);
             }
         }
-        Console.WriteLine("Our Units: " + str);
     }
 
+    public static BitArray GetOurSpawnable()
+    {
+        // (spawns-not-spawning + pumps-not-under-seige) - units
+        var spawns = Bb.OurSpawnSet.Where(p => !tileLookup[p].IsSpawning);
+        var pumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0).SelectMany(p => p.GetPoints());
+        var units = new BitArray(Bb.OurUnits).Or(Bb.TheirUnits);
+        return spawns.ToBitArray().Or(pumps.ToBitArray()).And(units.Not());
+    }
 
 
     private static void Reset()
@@ -245,17 +241,14 @@ public static class Bb
         Water = new BitArray(size);
         OurUnits = new BitArray(size);
         TheirUnits = new BitArray(size);
-        OurTiles = new BitArray(size);
-        TheirTiles = new BitArray(size);
 
-        OurPumpSet = new HashSet<Point>();
-        TheirPumpSet = new HashSet<Point>();
-        NeutralPumpSet = new HashSet<Point>();
         OurSpawnSet = new HashSet<Point>(); // Any tile where we can currently spawn a unit
         TheirSpawnSet = new HashSet<Point>();
         GlaciersSet = new HashSet<Point>();
-        TrenchesSet = new HashSet<Point>();
-        WaterSet = new HashSet<Point>();
+
+        OurPumpSet = new HashSet<Pump>();
+        TheirPumpSet = new HashSet<Pump>();
+        NeutralPumpSet = new HashSet<Pump>();
 
         OurUnitsSet = new HashSet<Unit>();
         TheirUnitsSet = new HashSet<Unit>();
@@ -265,16 +258,18 @@ public static class Bb
         TheirScoutsSet = new HashSet<Unit>();
         OurTanksSet = new HashSet<Unit>();
         TheirTanksSet = new HashSet<Unit>();
+        
+        tileLookup = new Dictionary<Point,Tile>();
     }
 
     public static int GetOffset(int x, int y)
     {
-        return y * maxX + x;
+        return y * (maxX + 1) + x;
     }
 
     public static int GetOffset(Point p)
     {
-        return p.y * maxX + p.x;
+        return GetOffset(p.x, p.y);
     }
 
     public static bool IsPumping(Point m)
