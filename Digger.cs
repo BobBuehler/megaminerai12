@@ -18,7 +18,7 @@ public static class Digger
     {
         var digworthy = GetDiggableAndUnDug();
         var starts = new HashSet<Point>(pump.GetPoints());
-        var goals = Bb.GlaciersSet;
+        var goals = Bb.GlaciersSet.Where(g => Bb.tileLookup[g].WaterAmount > 5);
         var impassable = new BitArray(Bb.OurSpawns).Or(Bb.TheirSpawns).Or(Bb.OurPumps).Or(Bb.TheirPumps);
         var path = Pather.AStar(starts, p => goals.Contains(p), impassable.Not(), (c, n) => digworthy.Get(n) ? 1 : 0, p => 0);
         return path.Where(p => digworthy.Get(p));
