@@ -40,21 +40,23 @@ public class AI : BaseAI
         int tankCost = 15;
 
         Func<Point, Point, int> Manhattan = (a, b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
+
         Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint = (starts, goals) =>
         {
             if (!starts.Any() || !goals.Any())
             {
                 return new Point(-1, -1);
             }
-            var closestPath = Pather.AStar(starts, p => goals.Contains(p), Solver.GetPassable(), (c, n) => 1, p => 0);
+
+            var closestPath = Pather.AStar(starts, p => goals.Contains(p), Solver.GetPassable().Or(goals.ToBitArray()), (c, n) => 1, p => 0);
             if (closestPath != null)
             {
                 return closestPath.First();
             }
+
             var pairs = starts.SelectMany(s => goals.Select(g => new { start = s, goal = g }));
             return pairs.minByValue(p => Manhattan(p.start, p.goal)).start;
         };
-
 
 
         if (finalStageCounter < 40)
