@@ -53,6 +53,9 @@
     <Compile Include="..\..\Point.cs">
       <Link>Point.cs</Link>
     </Compile>
+    <Compile Include="..\..\Pump.cs">
+      <Link>Pump.cs</Link>
+    </Compile>
     <Compile Include="..\..\PumpStation.cs" />
     <Compile Include="..\..\Solver.cs">
       <Link>Solver.cs</Link>
