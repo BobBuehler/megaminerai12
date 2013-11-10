@@ -50,10 +50,9 @@ public class AI : BaseAI
         //   spawn a scout
 
         var spawnable = Bb.GetOurSpawnable();
-
+        var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
         if (players[playerID()].Oxygen >= tankCost)
         {
-            var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
             foreach (Pump pump in ourPumpingPumps)
             {
                 var pumpPoints = new HashSet<Point>(pump.GetPoints());
@@ -86,6 +85,7 @@ public class AI : BaseAI
 
         var theirPumpingPumps = Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump));
         var theirPumpingPumpsBits = theirPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
+        var ourOwnedPumpingPumps = Bb.OurPumpSet.Where(p => Solver.WillBePumping(p));
 
         // Do Stuffs For Each Unit
         foreach (Unit u in Bb.OurUnitsSet)
@@ -103,7 +103,9 @@ public class AI : BaseAI
                     Solver.Attack(u);
                 }
                 else
+                {
                     Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
+                }
             }
             else if (u.Type == (int)Types.Worker)
             {
@@ -112,7 +114,23 @@ public class AI : BaseAI
             }
             else if (u.Type == (int)Types.Tank)
             {
-                Solver.Attack(u);
+                // Check whether our pump is pumping and move/die if it isn't
+                if (!ourOwnedPumpingPumps.SelectMany(p => p.GetPoints()).Contains(u.ToPoint()))
+                {
+                    if (theirPumpingPumps.Count() != 0)
+                    {
+                        Solver.Move(u, theirPumpingPumpsBits);
+                        Solver.Attack(u);
+                    }
+                    else
+                    {
+                        Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
+                    }
+                }
+                else
+                {
+                    Solver.Attack(u);
+                }
             }
         }
         return true;
