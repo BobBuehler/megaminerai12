@@ -113,9 +113,15 @@ public static class Solver
         return false;
     }
 
-    public static void MoveAndAttack(Unit attacker, IEnumerable<Unit> targets)
+    public static void MoveAndAttack(Unit attacker, IEnumerable<Unit> targets, bool ifInRange = false)
     {
-        if (Attack(attacker, targets))
+        var alive = targets.Where(t => t.HealthLeft > 0);
+        if (!alive.Any())
+        {
+            return;
+        }
+
+        if (Attack(attacker, alive))
         {
             return;
         }
@@ -125,15 +131,36 @@ public static class Solver
             return;
         }
 
-        var steps = GetWalkingSteps(attacker.ToPoint(), targets.Select(t => t.ToPoint()).ToBitArray(), nearbyOk: true);
+        var steps = GetWalkingSteps(attacker.ToPoint(), alive.Select(t => t.ToPoint()).ToBitArray(), nearbyOk: true);
         if (steps == null)
         {
             return;
         }
+
+
+
+        if (ifInRange)
+        {
+            int simulationMoves = attacker.MovementLeft;
+            foreach (var step in steps)
+            {
+                simulationMoves--;
+                if (simulationMoves < 0)
+                {
+                    return;
+                }
+                if (alive.Any(t => Manhattan(t.ToPoint(), step) < attacker.Range))
+                {
+                    break;
+                }
+            }
+        }
+        
+        
         foreach (var step in steps)
         {
             attacker.move(step.x, step.y);
-            if (Attack(attacker, targets) || attacker.MovementLeft == 0)
+            if (Attack(attacker, alive) || attacker.MovementLeft == 0)
             {
                 return;
             }
