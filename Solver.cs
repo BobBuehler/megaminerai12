@@ -24,6 +24,12 @@ public static class Solver
 
     public static LinkedList<Point> GetWalkingSteps(Point start, BitArray goals, bool walkInWater = false)
     {
+        Bb.ReadBoard();
+
+        if (!goals.ToPoints().Any())
+        {
+            return null;
+        }
         Point[] starts = { start };
         var passable = Solver.GetPassable(walkInWater);
         passable.Set(start, true);
@@ -39,8 +45,6 @@ public static class Solver
 
     public static void Move(Unit unit, BitArray goals)
     {
-        Bb.ReadBoard();
-
         var stepCount = unit.MovementLeft;
         if (stepCount == 0)
         {
@@ -66,7 +70,7 @@ public static class Solver
     public static bool IsPumping(Pump pump)
     {
         var starts = pump.GetPoints();
-        var goals = Bb.Glaciers;
+        var goals = Bb.GlaciersSet.Where(g => Bb.tileLookup[g].WaterAmount > 6).ToBitArray();
         var passable = new BitArray(Bb.Water).Or(starts.ToBitArray()).Or(goals);
 
         return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
