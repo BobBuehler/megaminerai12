@@ -327,8 +327,15 @@ public class AI : BaseAI
 
     private Pump FindFinalPump()
     {
-        var allPumps = Bb.OurPumpSet.Union(Bb.TheirPumpSet).Union(Bb.NeutralPumpSet);
-        return allPumps.minByValue(pump => Bb.OurSpawnSet.Sum(spawn => Solver.Manhattan(spawn, pump.NW)));
+        var pumps = Bb.OurPumpSet;
+        if (!pumps.Any())
+        {
+            pumps = Bb.TheirPumpSet;
+        }
+        return pumps.minByValue(p => Bb.GlaciersSet.Min(g => p.GetPoints().Min(pc => Solver.Manhattan(pc, g))));
+        
+        //var allPumps = Bb.OurPumpSet.Union(Bb.TheirPumpSet).Union(Bb.NeutralPumpSet);
+        //return allPumps.minByValue(pump => Bb.OurSpawnSet.Sum(spawn => Solver.Manhattan(spawn, pump.NW)));
     }
 
     private void SpawnTanks(Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint)
