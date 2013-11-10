@@ -48,6 +48,10 @@ public static class Solver
         }
 
         var steps = GetWalkingSteps(unit.ToPoint(), goals);
+        if (steps == null)
+        {
+            return;
+        }
         foreach (Point p in steps)
         {
             if (stepCount == 0)
