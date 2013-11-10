@@ -40,6 +40,9 @@
       <Link>Bb.cs</Link>
     </Compile>
     <Compile Include="..\..\Client.cs" />
+    <Compile Include="..\..\Digger.cs">
+      <Link>Digger.cs</Link>
+    </Compile>
     <Compile Include="..\..\ExistentialError.cs" />
     <Compile Include="..\..\Extensions.cs">
       <Link>Extensions.cs</Link>
