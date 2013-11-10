@@ -6,7 +6,8 @@ using System.Collections;
 
 // Dustin needs hashet of spawnable tiles
 // ./run r99acm.device.mst.edu <gamenum>
-// Pump station is multiple tiles, need list of pump station bitboards
+// bit board: is spawning
+// bit board: is under siege
 /* Bit Boards */
 public static class Bb
 {
@@ -26,6 +27,8 @@ public static class Bb
     public static BitArray OurPumps;
     public static BitArray TheirPumps;
     public static BitArray NeutralPumps;
+    public static BitArray UnderSiege;
+    public static BitArray IsSpawning;
 
     public static HashSet<Point> OurSpawnSet;
     public static HashSet<Point> TheirSpawnSet;
@@ -103,6 +106,12 @@ public static class Bb
         {
             int offset = GetOffset(tile.X, tile.Y);
             Point point = new Point(tile.X, tile.Y);
+
+            // IsSpawning
+            if (tile.IsSpawning)
+            {
+                IsSpawning[offset] = true;
+            }
 
             // Glaciers
             if (tile.Depth == 0 && tile.WaterAmount > 0 && tile.Owner == 3)
@@ -202,6 +211,13 @@ public static class Bb
             pumpLookup.Remove(ps.Id);
 
             var pump = new Pump(ps, p);
+            if (pump.station.SiegeAmount > 0)
+            {
+                UnderSiege[GetOffset(pump.SW.x, pump.SW.y)] = true;
+                UnderSiege[GetOffset(pump.NW.x, pump.NW.y)] = true;
+                UnderSiege[GetOffset(pump.SE.x, pump.SE.y)] = true;
+                UnderSiege[GetOffset(pump.NE.x, pump.NE.y)] = true;
+            }
             if (tile.Owner == usId)
             {
                 OurPumpSet.Add(pump);
@@ -239,6 +255,8 @@ public static class Bb
         Water = new BitArray(size);
         OurUnits = new BitArray(size);
         TheirUnits = new BitArray(size);
+        UnderSiege = new BitArray(size);
+        IsSpawning = new BitArray(size);
 
         OurSpawnSet = new HashSet<Point>(); // Any tile where we can currently spawn a unit
         TheirSpawnSet = new HashSet<Point>();
@@ -256,8 +274,8 @@ public static class Bb
         TheirScoutsSet = new HashSet<Unit>();
         OurTanksSet = new HashSet<Unit>();
         TheirTanksSet = new HashSet<Unit>();
-        
-        tileLookup = new Dictionary<Point,Tile>();
+
+        tileLookup = new Dictionary<Point, Tile>();
     }
 
     public static int GetOffset(int x, int y)
