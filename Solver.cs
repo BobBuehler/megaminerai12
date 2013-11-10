@@ -79,7 +79,7 @@ public static class Solver
 
     public static bool Attack(Unit attacker, IEnumerable<Unit> targets)
     {
-        var target = targets.FirstOrDefault(t => t.HealthLeft > 0 && Manhattan(attacker.ToPoint(), t.ToPoint()) < attacker.Range);
+        var target = targets.FirstOrDefault(t => t.HealthLeft > 0 && Manhattan(attacker.ToPoint(), t.ToPoint()) <= attacker.Range);
         if (target != null)
         {
             attacker.attack(target);
