@@ -44,13 +44,15 @@ public class AI : BaseAI
         if (Bb.OurUnitsSet.Count < maxUnits())
         {
             var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
-            while ((players[playerID()].Oxygen >= workerCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
+            while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
             {
                 var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
-                Bb.tileLookup[start].spawn((int)Types.Worker);
+                Bb.tileLookup[start].spawn((int)Types.Scout);
                 ourSpawnable.Remove(start);
             }
         }
+        var pumpingPumpsSet = Bb.TheirPumpSet.Where(p => Solver.IsPumping(p)).SelectMany(p => p.GetPoints());
+        var pumpingPumps = pumpingPumpsSet.ToBitArray();
 
         // Do Stuffs For Each Unit
         foreach (Unit u in Bb.OurUnitsSet)
@@ -58,7 +60,10 @@ public class AI : BaseAI
             // If you don't own the unit, ignore it.
             if (u.Owner != playerID())
                 continue;
-            Solver.Move(u, Bb.TheirPumps);
+            if (pumpingPumpsSet.Count() == 0)
+                Solver.Move(u, Bb.TheirPumps);
+            else
+                Solver.Move(u, pumpingPumps);
             Solver.Attack(u);
         }
         return true;
