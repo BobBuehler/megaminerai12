@@ -22,7 +22,7 @@ public static class Solver
         return spawning.ToBitArray().Or(impassible).Not();
     }
 
-    public static LinkedList<Point> GetWalkingSteps(Point start, BitArray goals, bool walkInWater = false)
+    public static LinkedList<Point> GetWalkingSteps(Point start, BitArray goals, bool walkInWater = false, bool nearbyOk = false)
     {
         Bb.ReadBoard();
 
@@ -34,7 +34,10 @@ public static class Solver
         var passable = Solver.GetPassable(walkInWater);
         var aStarPassable = new BitArray(passable);
         aStarPassable.Set(start, true);
-        aStarPassable.Or(goals);
+        if (nearbyOk)
+        {
+            aStarPassable.Or(goals);
+        }
         var route = Pather.AStar(starts, p => goals.Get(p), aStarPassable, (c, n) => 1, p => 0);
         if (route == null)
         {
@@ -119,7 +122,7 @@ public static class Solver
             return;
         }
 
-        var steps = GetWalkingSteps(attacker.ToPoint(), targets.Select(t => t.ToPoint()).ToBitArray());
+        var steps = GetWalkingSteps(attacker.ToPoint(), targets.Select(t => t.ToPoint()).ToBitArray(), nearbyOk: true);
         if (steps == null)
         {
             return;
