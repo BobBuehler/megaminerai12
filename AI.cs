@@ -65,28 +65,39 @@ public class AI : BaseAI
             // while I can afford scouts
             //   spawn a scout
 
-            var spawnable = Bb.GetOurSpawnable();
-            var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
-            if (players[playerID()].Oxygen >= tankCost)
-            {
-                foreach (Pump pump in ourPumpingPumps)
-                {
-                    var pumpPoints = new HashSet<Point>(pump.GetPoints());
-                    var tanksOnPump = Bb.OurTanksSet.Where(t => pumpPoints.Contains(t.ToPoint()));
-                    if (!tanksOnPump.Any())
-                    {
-                        var openPoints = pumpPoints.Where(p => spawnable.Get(p));
-                        if (openPoints.Any())
-                        {
-                            Bb.tileLookup[openPoints.First()].spawn((int)Types.Tank);
-                        }
-                    }
-                    if (players[playerID()].Oxygen < tankCost)
-                    {
-                        break;
-                    }
-                }
-            }
+            //bool shouldSpwanScouts = true;
+            //var spawnable = Bb.GetOurSpawnable();
+            //var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
+            //if (Bb.TheirWorkersSet.Count == 0)
+            //{
+            //    foreach (Pump pump in ourPumpingPumps)
+            //    {
+            //        var pumpPoints = new HashSet<Point>(pump.GetPoints());
+            //        var tanksOnPump = Bb.OurTanksSet.Where(t => pumpPoints.Contains(t.ToPoint()));
+            //        if (!tanksOnPump.Any())
+            //        {
+            //            var openPoints = pumpPoints.Where(p => spawnable.Get(p));
+            //            if (openPoints.Any())
+            //            {
+            //                if (players[playerID()].Oxygen >= tankCost)
+            //                {
+            //                    Bb.tileLookup[openPoints.First()].spawn((int)Types.Tank);
+            //                }
+            //                else
+            //                {
+            //                    shouldSpwanScouts = false;
+            //                }
+            //            }
+            //        }
+            //        if (players[playerID()].Oxygen < tankCost)
+            //        {
+            //            break;
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //}
 
             Bb.ReadBoard();
 
@@ -97,6 +108,8 @@ public class AI : BaseAI
             var ourOwnedSiegedPumpingPumpsBits = ourOwnedSiegedPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
 
             var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
+            //if (shouldSpwanScouts == true)
+            //{
             while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
             {
                 var start = CalcSpawnPoint(ourSpawnable, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits).ToPoints());
@@ -107,6 +120,7 @@ public class AI : BaseAI
                 Bb.tileLookup[start].spawn((int)Types.Scout);
                 ourSpawnable.Remove(start);
             }
+            //}
 
             Bb.ReadBoard();
 
@@ -118,7 +132,14 @@ public class AI : BaseAI
                     if (theirPumpingPumps.Count() != 0 || ourOwnedSiegedPumpingPumps.Count() > 0)
                     {
                         Solver.Move(u, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits));
-                        Solver.Attack(u);
+                        if (u.MovementLeft == u.MaxMovement)
+                        {
+                            Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
+                        }
+                        else
+                        {
+                            Solver.Attack(u);
+                        }
                     }
                     else if (Bb.TheirPumpSet.Count != 0)
                     {
@@ -153,7 +174,7 @@ public class AI : BaseAI
         }
         else
         {
-            if (stage == 1) // Suicide
+            if (stage == 1 && BaseAI.players[Bb.usId].WaterStored <= BaseAI.players[Bb.themId].WaterStored) // Suicide
             {
                 Console.WriteLine("STAGE TWO");
                 foreach (Unit u in Bb.OurUnitsSet)
@@ -177,6 +198,14 @@ public class AI : BaseAI
                 // Have worker maintain the trench until empty
                 MaintainTrench();
             }
+            else
+            {
+                // Spawn Scouts
+                SpawnScouts(CalcSpawnPoint);
+                // Everyone Move/Attack
+                AllMoveAttack();
+            }
+
             if (Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump)).Count() > 0)
             {
                 stage = 1;
@@ -185,6 +214,39 @@ public class AI : BaseAI
         }
 
         return true;
+    }
+
+    private void SpawnScouts(Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint)
+    {
+        bool spawned = true;
+        while (players[playerID()].Oxygen >= 12 && spawned)
+        {
+            Point spawnPoint;
+            if (Bb.OurUnitsSet.Count > 0)
+            {
+                spawnPoint = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), Bb.OurUnits.ToPoints());
+            }
+            else if (Bb.TheirUnitsSet.Count > 0)
+            {
+                spawnPoint = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), Bb.TheirUnits.ToPoints());
+            }
+            else
+            {
+                spawnPoint = Bb.GetOurSpawnable().ToPoints().First();
+            }
+            //Console.WriteLine("Scout Spawn Point: (" + spawnPoint.x + ", " + spawnPoint.y + ")");
+            spawned = Bb.tileLookup[spawnPoint].spawn((int)Types.Scout);
+            Bb.ReadBoard();
+        }
+    }
+
+    private void AllMoveAttack()
+    {
+        foreach (Unit unit in Bb.OurUnitsSet)
+        {
+            Solver.MoveAndAttack(unit, Bb.TheirUnitsSet);
+            Bb.ReadBoard();
+        }
     }
 
     private void MaintainTrench()
@@ -225,10 +287,16 @@ public class AI : BaseAI
     private void MoveTanksToPump()
     {
         Console.WriteLine("Moving tanks to pump");
-        foreach (Unit u in Bb.OurTanksSet)
+        foreach (Unit tank in Bb.OurTanksSet)
         {
-            Solver.Move(u, finalPump.GetBitArray());
-            Solver.Attack(u);
+            Solver.Move(tank, finalPump.GetBitArray());
+            Solver.Attack(tank);
+            Bb.ReadBoard();
+        }
+        foreach (Unit scout in Bb.OurScoutsSet)
+        {
+            Solver.Move(scout, finalPump.GetBitArray());
+            Solver.Attack(scout);
             Bb.ReadBoard();
         }
     }
@@ -254,8 +322,15 @@ public class AI : BaseAI
         bool spawned = true;
         while (players[playerID()].Oxygen >= 15 && Bb.OurTanksSet.Count <= maxTanks && spawned)
         {
-            var start = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
-            spawned = Bb.tileLookup[start].spawn((int)Types.Tank);
+            var spawnPoint = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
+            if (finalPump.GetPoints().Contains(spawnPoint))
+            {
+                spawned = Bb.tileLookup[spawnPoint].spawn((int)Types.Tank);
+            }
+            else
+            {
+                spawned = Bb.tileLookup[spawnPoint].spawn((int)Types.Scout);
+            }
             Bb.ReadBoard();
         }
     }
