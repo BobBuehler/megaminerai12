@@ -40,6 +40,15 @@ public class AI : BaseAI
         Func<Point, Point, int> Manhattan = (a, b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
         Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint = (starts, goals) =>
         {
+            if (!starts.Any() || !goals.Any())
+            {
+                return new Point(-1, -1);
+            }
+            var closestPath = Pather.AStar(starts, p => goals.Contains(p), Solver.GetPassable(), (c, n) => 1, p => 0);
+            if (closestPath != null)
+            {
+                return closestPath.First();
+            }
             var pairs = starts.SelectMany(s => goals.Select(g => new { start = s, goal = g }));
             return pairs.minByValue(p => Manhattan(p.start, p.goal)).start;
         };
@@ -79,22 +88,27 @@ public class AI : BaseAI
                 }
             }
 
-            var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
-            while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
-            {
-                var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
-                Bb.tileLookup[start].spawn((int)Types.Scout);
-                ourSpawnable.Remove(start);
-            }
-
             Bb.ReadBoard();
-
 
             var theirPumpingPumps = Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump));
             var theirPumpingPumpsBits = theirPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
             var ourOwnedPumpingPumps = Bb.OurPumpSet.Where(p => Solver.WillBePumping(p));
             var ourOwnedSiegedPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount > 0 && Solver.WillBePumping(p));
             var ourOwnedSiegedPumpingPumpsBits = ourOwnedSiegedPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
+
+            var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
+            while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
+            {
+                var start = CalcSpawnPoint(ourSpawnable, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits).ToPoints());
+                if (start.x == -1)
+                {
+                    start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
+                }
+                Bb.tileLookup[start].spawn((int)Types.Scout);
+                ourSpawnable.Remove(start);
+            }
+
+            Bb.ReadBoard();
 
             // Do Stuffs For Each Unit
             foreach (Unit u in Bb.OurUnitsSet)
