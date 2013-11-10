@@ -27,6 +27,7 @@ public class AI : BaseAI
     /// <returns>True to end your turn. False to ask the server for updated information.</returns>
     public override bool run()
     {
+        Console.WriteLine("Turn:{0}, P0:{1}, P1:{2}", turnNumber(), players[0].WaterStored, players[1].WaterStored);
         Bb.Init(this);
         int workerCost = 10;
         int scoutCost = 12;

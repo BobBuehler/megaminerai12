@@ -13,7 +13,8 @@ public static class Solver
 
     public static BitArray GetPassable()
     {
-        return new BitArray(Bb.Water).Or(Bb.Glaciers).Or(Bb.TheirSpawns).Or(Bb.TheirUnits).Or(Bb.OurUnits).Not();
+        var spawning = Bb.OurSpawnSet.Union(Bb.OurPumpSet.SelectMany(pump => pump.GetPoints())).Where(p => !Bb.tileLookup[p].IsSpawning);
+        return spawning.ToBitArray().Or(Bb.Water).Or(Bb.Glaciers).Or(Bb.TheirSpawns).Or(Bb.TheirUnits).Or(Bb.OurUnits).Not();
     }
 
     public static void Move(Unit unit, BitArray goals, bool nextTo = false)
