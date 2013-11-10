@@ -12,8 +12,8 @@ public static class Bb
 {
     public static int maxX; // (0, 0) is the top-left corner
     public static int maxY;
-    public static int us;
-    public static int them;
+    public static int usId;
+    public static int themId;
 
     public static BitArray OurPumps;
     public static BitArray TheirPumps;
@@ -46,20 +46,28 @@ public static class Bb
     public static HashSet<Unit> OurTanksSet;
     public static HashSet<Unit> TheirTanksSet;
 
+    private static bool init = false;
+
     public static void Init(AI ai)
     {
-        maxX = ai.mapWidth();
-        maxY = ai.mapHeight();
-        us = ai.playerID();
-        them = 1 - ai.playerID();
+        maxX = ai.mapWidth() - 1;
+        maxY = ai.mapHeight() - 1;
+        usId = ai.playerID();
+        themId = 1 - ai.playerID();
 
         Reset();
+
+        init = true;
 
         ReadBoard();
     }
 
     public static void ReadBoard()
     {
+        if (!init)
+        {
+            throw new Exception("Must call Init(AI ai) before using ReadBoard()");
+        }
         Reset();
 
         foreach (Tile tile in BaseAI.tiles)
@@ -95,12 +103,12 @@ public static class Bb
                 {
                     if (station.Id == tile.PumpID)
                     {
-                        if (station.Owner == us)
+                        if (station.Owner == usId)
                         {
                             OurPumps[offset] = true;
                             OurPumpSet.Add(point);
                         }
-                        else if (station.Owner == them)
+                        else if (station.Owner == themId)
                         {
                             TheirPumps[offset] = true;
                             TheirPumpSet.Add(point);
@@ -115,18 +123,74 @@ public static class Bb
             }
 
             // Spawn Tiles
-            if (tile.Owner == us)
+            if (tile.Owner == usId)
             {
                 OurTiles[offset] = true;
             }
-            else if (tile.Owner == them)
+            else if (tile.Owner == themId)
             {
                 TheirTiles[offset] = true;
             }
-
-            OurSpawns = OurTiles.Or(OurPumps).And(TheirUnits.Not()).And(OurUnits.Not());
         }
+        Console.WriteLine("Looking through units now.");
+        // All Units
+        foreach (Unit unit in BaseAI.units)
+        {
+            Point point = new Point(unit.X, unit.Y);
+            int offset = GetOffset(point);
+
+            // Our Units
+            if (unit.Owner == usId)
+            {
+                OurUnitsSet.Add(unit);
+                OurUnits[offset] = true;
+                if (unit.Type == 0) // Worker
+                {
+                    OurWorkersSet.Add(unit);
+                }
+                else if (unit.Type == 1) // Scout
+                {
+                    OurScoutsSet.Add(unit);
+                }
+                else if (unit.Type == 2) // Tank
+                {
+                    OurTanksSet.Add(unit);
+                }
+            }
+
+            // Their Units
+            if (unit.Owner == themId)
+            {
+                TheirUnitsSet.Add(unit);
+                TheirUnits[offset] = true;
+                if (unit.Type == 0) // Worker
+                {
+                    TheirWorkersSet.Add(unit);
+                }
+                else if (unit.Type == 1) // Scout
+                {
+                    TheirScoutsSet.Add(unit);
+                }
+                else if (unit.Type == 2) // Tank
+                {
+                    TheirTanksSet.Add(unit);
+                }
+            }
+        }
+
+        string str = "Empty";
+        if (OurUnitsSet.Count > 0)
+        {
+            str = "";
+            foreach (Unit u in OurUnitsSet)
+            {
+                str += u.Type + " ";
+            }
+        }
+        Console.WriteLine("Our Units: " + str);
     }
+
+
 
     private static void Reset()
     {
@@ -141,6 +205,8 @@ public static class Bb
         Water = new BitArray(size);
         OurUnits = new BitArray(size);
         TheirUnits = new BitArray(size);
+        OurTiles = new BitArray(size);
+        TheirTiles = new BitArray(size);
 
         OurPumpSet = new HashSet<Point>();
         TheirPumpSet = new HashSet<Point>();
@@ -164,6 +230,11 @@ public static class Bb
     public static int GetOffset(int x, int y)
     {
         return y * maxX + x;
+    }
+
+    public static int GetOffset(Point p)
+    {
+        return p.y * maxX + p.x;
     }
 
     public static bool IsPumping(Point m)
