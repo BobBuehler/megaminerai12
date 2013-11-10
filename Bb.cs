@@ -244,11 +244,12 @@ public static class Bb
 
     public static BitArray GetOurSpawnable()
     {
-        // (spawns-not-spawning + pumps-not-under-seige) - units
-        var spawns = Bb.OurSpawnSet.Where(p => !tileLookup[p].IsSpawning);
-        var pumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0).SelectMany(p => p.GetPoints());
+        // (spawns + pumps-not-under-seige) - units - spawning
+        var spawns = Bb.OurSpawnSet.ToBitArray();
+        var pumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0).SelectMany(p => p.GetPoints()).ToBitArray();
         var units = new BitArray(Bb.OurUnits).Or(Bb.TheirUnits);
-        return spawns.ToBitArray().Or(pumps.ToBitArray()).And(units.Not());
+        var spawning = new BitArray(Bb.IsSpawning);
+        return spawns.Or(pumps).And(units.Not()).And(spawning.Not());
     }
 
 
