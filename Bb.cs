@@ -62,8 +62,35 @@ public static class Bb
         init = true;
 
         ReadBoard();
+
+        Print(OurSpawnSet);
     }
 
+    private static void Print(HashSet<Point> points)
+    {
+        string str = "Empty";
+        if (points.Count > 0)
+        {
+            str = "";
+            foreach (Point p in points)
+            {
+                str += "(" + p.x + ", " + p.y + ") ";
+            }
+        }
+        Console.WriteLine(str);
+    }
+
+    private static void Print(Tile tile)
+    {
+        string str = "";
+        str += "Tile (" + tile.X + ", " + tile.Y + ")";
+        str += "\nOwner: " + tile.Owner;
+        str += "\nID: " + tile.Id;
+        str += "\nDepth: " + tile.Depth;
+        str += "\nWater: " + tile.WaterAmount;
+        str += "\nPumpID: " + tile.PumpID;
+        Console.WriteLine(str + "\n");
+    }
 
     public static void ReadBoard()
     {
@@ -130,6 +157,7 @@ public static class Bb
             {
                 OurTiles[offset] = true;
                 OurSpawnSet.Add(point);
+                Print(tile);
             }
             else if (tile.Owner == themId)
             {
