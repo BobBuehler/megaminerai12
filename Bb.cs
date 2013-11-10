@@ -12,6 +12,7 @@ public static class Bb
 {
     public static int maxX; // (0, 0) is the top-left corner
     public static int maxY;
+    public static int size;
     public static int usId;
     public static int themId;
 
@@ -52,6 +53,7 @@ public static class Bb
     {
         maxX = ai.mapWidth() - 1;
         maxY = ai.mapHeight() - 1;
+        size = (maxX + 1) * (maxY + 1);
         usId = ai.playerID();
         themId = 1 - ai.playerID();
 
@@ -194,7 +196,6 @@ public static class Bb
 
     private static void Reset()
     {
-        int size = maxX * maxY;
         Glaciers = new BitArray(size);
         Trenches = new BitArray(size);
         OurPumps = new BitArray(size);
