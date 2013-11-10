@@ -6,6 +6,8 @@ using System.Collections;
 
 public static class Solver
 {
+
+    enum Types { Worker, Scout, Tank };
     public static int Manhattan(Point p1, Point p2)
     {
         return Math.Abs(p1.x - p2.x) + Math.Abs(p1.y - p2.y);
@@ -52,7 +54,7 @@ public static class Solver
         return steps;
     }
 
-    public static void Move(Unit unit, BitArray goals)
+    public static void Move(Unit unit, BitArray goals, bool walkInWater = false)
     {
         var stepCount = unit.MovementLeft;
         if (stepCount == 0)
@@ -60,7 +62,7 @@ public static class Solver
             return;
         }
 
-        var steps = GetWalkingSteps(unit.ToPoint(), goals);
+        var steps = GetWalkingSteps(unit.ToPoint(), goals, walkInWater);
         if (steps == null)
         {
             return;
@@ -135,5 +137,13 @@ public static class Solver
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// Returns unused attackers
+    /// </summary>
+    public static IEnumerable<Unit> GetPump(Pump pump, IEnumerable<Unit> attackers)
+    {
+        return null; // var scouts = attackers.Where(a => a.Type == (int)UnitTypes.Scout);
     }
 }
