@@ -6,8 +6,8 @@ using System.Collections;
 
 public static class Solver
 {
+    enum UnitTypes { Worker, Scout, Tank };
 
-    enum Types { Worker, Scout, Tank };
     public static int Manhattan(Point p1, Point p2)
     {
         return Math.Abs(p1.x - p2.x) + Math.Abs(p1.y - p2.y);
@@ -90,7 +90,7 @@ public static class Solver
     public static bool WillBePumping(Pump pump)
     {
         var starts = pump.GetPoints();
-        var goals = Bb.Glaciers;
+        var goals = Bb.GlaciersSet.Where(g => Bb.tileLookup[g].WaterAmount > 6).ToBitArray();
         var passable = new BitArray(Bb.Water).Or(starts.ToBitArray()).Or(goals).Or(Bb.Trenches);
 
         return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
@@ -142,8 +142,27 @@ public static class Solver
     /// <summary>
     /// Returns unused attackers
     /// </summary>
-    public static IEnumerable<Unit> GetPump(Pump pump, IEnumerable<Unit> attackers)
+    public static IEnumerable<Unit> GetPumps(IEnumerable<Unit> attackers, IEnumerable<Pump> pumps, int maxAttackersPerPump = 1)
     {
-        return null; // var scouts = attackers.Where(a => a.Type == (int)UnitTypes.Scout);
+        var tuples = attackers.SelectMany(a => pumps.Select(p => new { attacker = a, pump = p, dist = p.GetPoints().Min(pp => Manhattan(a.ToPoint(), pp)) }));
+        var pumpAttackers = pumps.ToDictionary(p => p.station.Id, p => 0);
+        var closedAttackers = new HashSet<int>();
+        foreach (var t in tuples.OrderBy(t => t.dist))
+        {
+            if (!closedAttackers.Contains(t.attacker.Id))
+            {
+                if (pumpAttackers[t.pump.station.Id] < maxAttackersPerPump)
+                {
+                    Solver.Move(t.attacker, t.pump.GetBitArray());
+                    Solver.Attack(t.attacker);
+
+                    pumpAttackers[t.pump.station.Id]++;
+                    closedAttackers.Add(t.attacker.Id);
+                }
+            }
+        }
+        return attackers.Where(a => !closedAttackers.Contains(a.Id));
     }
 }
+
+// 
