@@ -50,6 +50,7 @@ public static class Bb
     public static HashSet<Pump> NeutralPumpSet; // May be able to ignore?
 
     public static Dictionary<Point, Tile> tileLookup;
+    public static Dictionary<Point, Pump> pumpPointLookup;
 
     private static bool init = false;
 
@@ -235,6 +236,10 @@ public static class Bb
                 NeutralPumpSet.Add(pump);
             }
         }
+
+        pumpPointLookup = OurPumpSet.Union(TheirPumpSet).Union(NeutralPumpSet)
+            .SelectMany(pump => pump.GetPoints().Select(point => new { ump = pump, oint = point }))
+            .ToDictionary(a => a.oint, a => a.ump);
     }
 
     public static BitArray GetOurSpawnable()
@@ -280,6 +285,7 @@ public static class Bb
         TheirTanksSet = new HashSet<Unit>();
 
         tileLookup = new Dictionary<Point, Tile>();
+        pumpPointLookup = new Dictionary<Point, Pump>();
     }
 
     public static int GetOffset(int x, int y)
