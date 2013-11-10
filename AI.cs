@@ -43,10 +43,10 @@ public class AI : BaseAI
         if (Bb.OurUnitsSet.Count < maxUnits())
         {
             var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
-            while ((players[playerID()].Oxygen >= scoutCost) && (Bb.OurSpawnSet.Count != 0) && (Bb.TheirPumpSet.Count != 0))
+            while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
             {
                 var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
-                Console.WriteLine(tiles[Bb.GetOffset(start.x, start.y)].spawn((int)Types.Scout));
+                Bb.tileLookup[start].spawn((int)Types.Scout);
                 ourSpawnable.Remove(start);
             }
         }
