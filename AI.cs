@@ -28,6 +28,9 @@ public class AI : BaseAI
     public override bool run()
     {
         Bb.Init(this);
+        int workerCost = 10;
+        int scoutCost = 12;
+        int tankCost = 15;
 
         Func<Point, Point, int> Manhattan = (a, b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
         Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint = (starts, goals) =>
@@ -39,7 +42,7 @@ public class AI : BaseAI
         // Spawn Stuffs
         if (Bb.OurUnitsSet.Count < maxUnits())
         {
-            while (players[playerID()].Oxygen >= 12)
+            while ((players[playerID()].Oxygen >= scoutCost) && (Bb.OurSpawnSet.Count != 0) && (Bb.TheirPumpSet.Count != 0))
             {
                 var start = CalcSpawnPoint(Bb.OurSpawnSet, Bb.TheirPumpSet);
                 tiles[Bb.GetOffset(start.x, start.y)].spawn((int)Types.Scout);
@@ -53,7 +56,7 @@ public class AI : BaseAI
             // If you don't own the unit, ignore it.
             if (i.Owner != playerID())
                 continue;
-            Solver.Walk(i, Bb.TheirPumps);
+            Solver.Move(i, Bb.TheirPumps);
         }
         return true;
     }
