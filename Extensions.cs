@@ -29,6 +29,11 @@ public static class Extensions
         return b.Get(Bb.GetOffset(p.x, p.y));
     }
 
+    public static void Set(this BitArray b, Mappable m, bool value)
+    {
+        b.Set(Bb.GetOffset(m.X, m.Y), value);
+    }
+
     public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
     {
         foreach (var s in source)
