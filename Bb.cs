@@ -61,8 +61,6 @@ public static class Bb
         init = true;
 
         ReadBoard();
-
-        Print(OurSpawnSet);
     }
 
     private static void Print(HashSet<Point> points)

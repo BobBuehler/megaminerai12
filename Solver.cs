@@ -18,15 +18,17 @@ public static class Solver
 
     public static void Move(Unit unit, BitArray goals, bool nextTo = false)
     {
+        Bb.ReadBoard();
+
         var steps = unit.MovementLeft;
         if (steps == 0)
         {
             return;
         }
 
-        Point[] starts = { new Point(unit.X, unit.Y) };
+        Point[] starts = { unit.ToPoint() };
         var passable = GetPassable();
-        passable.Set(Bb.GetOffset(unit.X, unit.Y), false);
+        passable.Set(unit, true);
         var route = Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0);
         bool first = true;
         foreach (Point p in route)
