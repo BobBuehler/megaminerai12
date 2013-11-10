@@ -13,7 +13,7 @@ public static class Solver
 
     public static BitArray GetPassable()
     {
-        var spawning = Bb.OurSpawnSet.Union(Bb.OurPumpSet.SelectMany(pump => pump.GetPoints())).Where(p => !Bb.tileLookup[p].IsSpawning);
+        var spawning = Bb.OurSpawnSet.Union(Bb.OurPumpSet.Union(Bb.TheirPumpSet).SelectMany(pump => pump.GetPoints())).Where(p => Bb.tileLookup[p].IsSpawning);
         return spawning.ToBitArray().Or(Bb.Water).Or(Bb.Glaciers).Or(Bb.TheirSpawns).Or(Bb.TheirUnits).Or(Bb.OurUnits).Not();
     }
 
@@ -31,6 +31,10 @@ public static class Solver
         var passable = GetPassable();
         passable.Set(unit, true);
         var route = Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0);
+        if (route == null)
+        {
+            return;
+        }
         bool first = true;
         foreach (Point p in route)
         {
@@ -59,7 +63,7 @@ public static class Solver
 
     public static void Attack(Unit attacker)
     {
-        var target = Bb.TheirUnitsSet.FirstOrDefault(t => Manhattan(attacker.ToPoint(), t.ToPoint()) < attacker.Range);
+        var target = Bb.TheirUnitsSet.FirstOrDefault(t => t.HealthLeft > 0 && Manhattan(attacker.ToPoint(), t.ToPoint()) < attacker.Range);
         if (target != null)
         {
             attacker.attack(target);
