@@ -101,6 +101,10 @@ public static class Solver
         }
 
         var steps = GetWalkingSteps(attacker.ToPoint(), targets.Select(t => t.ToPoint()).ToBitArray());
+        if (steps == null)
+        {
+            return;
+        }
         foreach (var step in steps)
         {
             attacker.move(step.x, step.y);
