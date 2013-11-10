@@ -121,6 +121,11 @@ public class AI : BaseAI
                 {
                     if (theirPumpingPumps.Count() != 0 || ourOwnedSiegedPumpingPumps.Count() > 0)
                     {
+                        Solver.MoveAndAttack(u, Bb.TheirScoutsSet.Union(Bb.TheirWorkersSet), true);
+                        if (u.HasAttacked)
+                        {
+                            continue;
+                        }
                         Solver.Move(u, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits));
                         Solver.Attack(u);
                     }
