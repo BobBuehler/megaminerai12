@@ -11,6 +11,9 @@ public class AI : BaseAI
 {
     // Enum for types of units you can spawn.
     enum Types { Worker, Scout, Tank };
+    Pump finalPump = null;
+    int finalStageCounter = 0;
+    int stage = 1;
 
     public override string username()
     {
@@ -42,92 +45,193 @@ public class AI : BaseAI
         };
 
 
-        // if I can tank
-        //   Loop over our pumping pumps
-        //     it it doesn't have a tank
-        //       try to spawn a tank
-        // while I can afford scouts
-        //   spawn a scout
 
-        var spawnable = Bb.GetOurSpawnable();
-        var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
-        if (players[playerID()].Oxygen >= tankCost)
+        if (finalStageCounter < 40)
         {
-            foreach (Pump pump in ourPumpingPumps)
+
+            // if I can tank
+            //   Loop over our pumping pumps
+            //     it it doesn't have a tank
+            //       try to spawn a tank
+            // while I can afford scouts
+            //   spawn a scout
+
+            var spawnable = Bb.GetOurSpawnable();
+            var ourPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount == 0 && Solver.WillBePumping(p));
+            if (players[playerID()].Oxygen >= tankCost)
             {
-                var pumpPoints = new HashSet<Point>(pump.GetPoints());
-                var tanksOnPump = Bb.OurTanksSet.Where(t => pumpPoints.Contains(t.ToPoint()));
-                if (!tanksOnPump.Any())
+                foreach (Pump pump in ourPumpingPumps)
                 {
-                    var openPoints = pumpPoints.Where(p => spawnable.Get(p));
-                    if (openPoints.Any())
+                    var pumpPoints = new HashSet<Point>(pump.GetPoints());
+                    var tanksOnPump = Bb.OurTanksSet.Where(t => pumpPoints.Contains(t.ToPoint()));
+                    if (!tanksOnPump.Any())
                     {
-                        Bb.tileLookup[openPoints.First()].spawn((int)Types.Tank);
+                        var openPoints = pumpPoints.Where(p => spawnable.Get(p));
+                        if (openPoints.Any())
+                        {
+                            Bb.tileLookup[openPoints.First()].spawn((int)Types.Tank);
+                        }
+                    }
+                    if (players[playerID()].Oxygen < tankCost)
+                    {
+                        break;
                     }
                 }
-                if (players[playerID()].Oxygen < tankCost)
+            }
+
+            var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
+            while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
+            {
+                var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
+                Bb.tileLookup[start].spawn((int)Types.Scout);
+                ourSpawnable.Remove(start);
+            }
+
+            Bb.ReadBoard();
+
+
+            var theirPumpingPumps = Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump));
+            var theirPumpingPumpsBits = theirPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
+            var ourOwnedPumpingPumps = Bb.OurPumpSet.Where(p => Solver.WillBePumping(p));
+            var ourOwnedSiegedPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount > 0 && Solver.WillBePumping(p));
+            var ourOwnedSiegedPumpingPumpsBits = ourOwnedSiegedPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
+
+            // Do Stuffs For Each Unit
+            foreach (Unit u in Bb.OurUnitsSet)
+            {
+                if (u.Type == (int)Types.Scout)
                 {
-                    break;
+                    if (theirPumpingPumps.Count() != 0 || ourOwnedSiegedPumpingPumps.Count() > 0)
+                    {
+                        Solver.Move(u, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits));
+                        Solver.Attack(u);
+                    }
+                    else if (Bb.TheirPumpSet.Count != 0)
+                    {
+                        Solver.Move(u, Bb.TheirPumps);
+                        Solver.Attack(u);
+                        finalStageCounter++;
+                    }
+                    else
+                    {
+                        Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
+                        finalStageCounter++;
+                    }
+                }
+                else if (u.Type == (int)Types.Worker)
+                {
+                    //Find nearest non pumping pump
+
+                }
+                else if (u.Type == (int)Types.Tank)
+                {
+                    // Check whether our pump is pumping and move/die if it isn't
+                    if (!ourOwnedPumpingPumps.SelectMany(p => p.GetPoints()).Contains(u.ToPoint()))
+                    {
+                        Solver.Move(u, Bb.Water, walkInWater: true);
+                    }
+                    else
+                    {
+                        Solver.Attack(u);
+                    }
                 }
             }
         }
-
-        var ourSpawnable = new HashSet<Point>(Bb.GetOurSpawnable().ToPoints());
-        while ((players[playerID()].Oxygen >= scoutCost) && (ourSpawnable.Count != 0) && (Bb.TheirPumpSet.Count != 0))
+        else
         {
-            var start = CalcSpawnPoint(ourSpawnable, Bb.TheirPumps.ToPoints());
-            Bb.tileLookup[start].spawn((int)Types.Scout);
-            ourSpawnable.Remove(start);
-        }
-
-        Bb.ReadBoard();
-
-
-        var theirPumpingPumps = Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump));
-        var theirPumpingPumpsBits = theirPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
-        var ourOwnedPumpingPumps = Bb.OurPumpSet.Where(p => Solver.WillBePumping(p));
-        var ourOwnedSiegedPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount > 0 && Solver.WillBePumping(p));
-        var ourOwnedSiegedPumpingPumpsBits = ourOwnedSiegedPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
-
-        // Do Stuffs For Each Unit
-        foreach (Unit u in Bb.OurUnitsSet)
-        {
-            if (u.Type == (int)Types.Scout)
+            if (stage == 1) // Suicide
             {
-                if (theirPumpingPumps.Count() != 0 || ourOwnedSiegedPumpingPumps.Count() > 0)
+                Console.WriteLine("STAGE TWO");
+                foreach (Unit u in Bb.OurUnitsSet)
                 {
-                    Solver.Move(u, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits));
-                    Solver.Attack(u);
+                    Solver.Move(u, Bb.Water, true);
                 }
-                else if (Bb.TheirPumpSet.Count != 0)
+                if (Bb.OurUnitsSet.Count == 0)
                 {
-                    Solver.Move(u, Bb.TheirPumps);
-                    Solver.Attack(u);
-                }
-                else
-                {
-                    Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
+                    // Suicide complete
+                    stage = 2;
                 }
             }
-            else if (u.Type == (int)Types.Worker)
+            else if (stage == 2)
             {
-                //Find nearest non pumping pump
-
-            }
-            else if (u.Type == (int)Types.Tank)
-            {
-                // Check whether our pump is pumping and move/die if it isn't
-                if (!ourOwnedPumpingPumps.SelectMany(p => p.GetPoints()).Contains(u.ToPoint()))
-                {
-                    Solver.Move(u, Bb.Water, walkInWater:true );
-                }
-                else
-                {
-                    Solver.Attack(u);
-                }
+                // Stage two
+                // Spawn 4 tanks and move them to one pump
+                SpawnTanks(CalcSpawnPoint);
+                MoveTanksToPump();
+                // Spawn 1 worker and have him dig to our pump (avoid connecting other pumps)
+                SpawnWorker(CalcSpawnPoint);
+                // Have worker maintain the trench until empty
+                MaintainTrench();
             }
         }
+
         return true;
+    }
+
+    private void MaintainTrench()
+    {
+        if (Bb.OurWorkersSet.Count == 1)
+        {
+            Unit worker = Bb.OurWorkersSet.First();
+            if (finalPump.station.Owner != Bb.usId)
+            {
+                // Go capture it
+                Solver.Move(worker, finalPump.GetBitArray());
+            }
+            else
+            {
+                // Maintain trench
+                // Dig it if it doesn't exit
+                // Dig shallowest otherwise
+                var neededPoints = Digger.GetNeededTrenches(finalPump);
+                Digger.MoveAndDig(worker, neededPoints);
+            }
+        }
+    }
+
+    private void SpawnWorker(Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint)
+    {
+        if (Bb.OurWorkersSet.Count == 0 && players[playerID()].Oxygen >= 10)
+        {
+            var start = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
+            Bb.tileLookup[start].spawn((int)Types.Worker);
+        }
+        Bb.ReadBoard();
+    }
+
+    private void MoveTanksToPump()
+    {
+        foreach (Unit u in Bb.OurTanksSet)
+        {
+            Solver.Move(u, finalPump.GetBitArray());
+            Solver.Attack(u);
+            Bb.ReadBoard();
+        }
+    }
+
+    private Pump FindFinalPump()
+    {
+        var allPumps = Bb.OurPumpSet.Union(Bb.TheirPumpSet).Union(Bb.NeutralPumpSet);
+        return allPumps.minByValue(pump => Bb.OurSpawnSet.Sum(spawn => Solver.Manhattan(spawn, pump.NW)));
+    }
+
+    private void SpawnTanks(Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint)
+    {
+        if (finalPump == null)
+        {
+            finalPump = FindFinalPump();
+        }
+        int maxTanks = 4;
+        if (finalPump.station.Owner != Bb.usId)
+        {
+            maxTanks = 3;
+        }
+        while (players[playerID()].Oxygen >= 15 && Bb.OurTanksSet.Count <= maxTanks)
+        {
+            var start = CalcSpawnPoint(Bb.GetOurSpawnable().ToPoints(), finalPump.GetPoints());
+            Bb.tileLookup[start].spawn((int)Types.Tank);
+            Bb.ReadBoard();
+        }
     }
 
     /// <summary>
