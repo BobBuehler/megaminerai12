@@ -86,15 +86,17 @@ public class AI : BaseAI
         var theirPumpingPumps = Bb.TheirPumpSet.Where(pump => Solver.WillBePumping(pump));
         var theirPumpingPumpsBits = theirPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
         var ourOwnedPumpingPumps = Bb.OurPumpSet.Where(p => Solver.WillBePumping(p));
+        var ourOwnedSiegedPumpingPumps = Bb.OurPumpSet.Where(p => p.station.SiegeAmount > 0 && Solver.WillBePumping(p));
+        var ourOwnedSiegedPumpingPumpsBits = ourOwnedSiegedPumpingPumps.SelectMany(p => p.GetPoints()).ToBitArray();
 
         // Do Stuffs For Each Unit
         foreach (Unit u in Bb.OurUnitsSet)
         {
             if (u.Type == (int)Types.Scout)
             {
-                if (theirPumpingPumps.Count() != 0)
+                if (theirPumpingPumps.Count() != 0 || ourOwnedSiegedPumpingPumps.Count() > 0)
                 {
-                    Solver.Move(u, theirPumpingPumpsBits);
+                    Solver.Move(u, theirPumpingPumpsBits.Or(ourOwnedSiegedPumpingPumpsBits));
                     Solver.Attack(u);
                 }
                 else if (Bb.TheirPumpSet.Count != 0)
@@ -117,15 +119,7 @@ public class AI : BaseAI
                 // Check whether our pump is pumping and move/die if it isn't
                 if (!ourOwnedPumpingPumps.SelectMany(p => p.GetPoints()).Contains(u.ToPoint()))
                 {
-                    if (theirPumpingPumps.Count() != 0)
-                    {
-                        Solver.Move(u, theirPumpingPumpsBits);
-                        Solver.Attack(u);
-                    }
-                    else
-                    {
-                        Solver.MoveAndAttack(u, Bb.TheirUnitsSet);
-                    }
+                    Solver.Move(u, Bb.Water, walkInWater:true );
                 }
                 else
                 {
