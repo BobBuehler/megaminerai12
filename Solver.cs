@@ -33,14 +33,15 @@ public static class Solver
             return null;
         }
         Point[] starts = { start };
-        var passable = Solver.GetPassable(walkInWater);
+        var passable = Solver.GetPassable(true);
         var aStarPassable = new BitArray(passable);
         aStarPassable.Set(start, true);
         if (nearbyOk)
         {
             aStarPassable.Or(goals);
         }
-        var route = Pather.AStar(starts, p => goals.Get(p), aStarPassable, (c, n) => 1, p => 0);
+        Func<Point, Point, int> cost = (c, n) => (Bb.Water.Get(n) && !walkInWater) ? 10 : 1;
+        var route = Pather.AStar(starts, p => goals.Get(p), aStarPassable, cost, p => 0);
         if (route == null)
         {
             return null;
