@@ -91,4 +91,41 @@ public static class Pather
 
         return neighbors.Where(n => n.x >= 0 && n.x < Bb.maxX && n.y >= 0 && n.y < Bb.maxY && passable.Get(n));
     }
+
+    public static IEnumerable<Point> Reach(Point start, BitArray targets, BitArray passable)
+    {
+        var open = new Queue<Point>();
+        open.Enqueue(start);
+
+        var closed = new HashSet<Point>();
+
+        var targetSet = new HashSet<Point>(targets.ToPoints());
+
+        var reach = new HashSet<Point>();
+
+        while (open.Count > 0)
+        {
+            Point current = open.Dequeue();
+            closed.Add(current);
+
+            if (targets.Get(current))
+            {
+                reach.Add(current);
+                if (reach.Count == targetSet.Count)
+                {
+                    break;
+                }
+            }
+
+            foreach (var n in GetNeighbors(current, passable))
+            {
+                if (!closed.Contains(n))
+                {
+                    open.Enqueue(n);
+                }
+            }
+        }
+
+        return reach;
+    }
 }
