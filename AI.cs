@@ -27,6 +27,8 @@ public class AI : BaseAI
     /// <returns>True to end your turn. False to ask the server for updated information.</returns>
     public override bool run()
     {
+        Bb.Init(this);
+
         Func<Point, Point, int> Manhattan = (a, b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
         Func<IEnumerable<Point>, IEnumerable<Point>, Point> CalcSpawnPoint = (starts, goals) =>
         {
@@ -34,27 +36,10 @@ public class AI : BaseAI
             return pairs.minByValue(p => Manhattan(p.start, p.goal)).start;
         };
 
-        int workerCost = Int32.MaxValue;
-        int scoutCost = Int32.MaxValue;
-        int tankCost = Int32.MaxValue;
-
-        // Get the unit cost for a worker.
-        for (int j = 0; j < unitTypes.Length; j++)
-            if (unitTypes[j].Type == (int)Types.Worker)
-                workerCost = unitTypes[j].Cost;
-        // Get the unit cost for a scout.
-        for (int j = 0; j < unitTypes.Length; j++)
-            if (unitTypes[j].Type == (int)Types.Scout)
-                scoutCost = unitTypes[j].Cost;
-        // Get the unit cost for a tank.
-        for (int j = 0; j < unitTypes.Length; j++)
-            if (unitTypes[j].Type == (int)Types.Tank)
-                tankCost = unitTypes[j].Cost;
-
         // Spawn Stuffs
-        if (Bb.OurUnits.Count < maxUnits())
+        if (Bb.OurUnitsSet.Count < maxUnits())
         {
-            while (players[playerID()].Oxygen >= scoutCost)
+            while (players[playerID()].Oxygen >= 12)
             {
                 var start = CalcSpawnPoint(Bb.OurSpawnSet, Bb.TheirPumpSet);
                 tiles[Bb.GetOffset(start.x, start.y)].spawn((int)Types.Scout);
@@ -63,7 +48,7 @@ public class AI : BaseAI
         }
 
         // Do Stuffs For Each Unit
-        foreach (Unit i in Bb.OurUnits)
+        foreach (Unit i in Bb.OurUnitsSet)
         {
             // If you don't own the unit, ignore it.
             if (i.Owner != playerID())
