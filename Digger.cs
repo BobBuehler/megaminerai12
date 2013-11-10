@@ -6,13 +6,22 @@ using System.Collections;
 
 public static class Digger
 {
+    public static BitArray GetDiggableAndUnDug()
+    {
+        return new BitArray(Bb.OurPumps).Or(Bb.TheirPumps)
+            .Or(Bb.OurSpawns).Or(Bb.TheirSpawns)
+            .Or(Bb.OurUnits).Or(Bb.TheirUnits)
+            .Or(Bb.Water).Or(Bb.Trenches)
+            .Or(Bb.Glaciers).Not();
+    }
     public static IEnumerable<Point> GetNeededTrenches(Pump pump)
     {
+        var digworthy = GetDiggableAndUnDug();
         var starts = new HashSet<Point>(pump.GetPoints());
         var goals = Bb.GlaciersSet;
-        var impassable = new BitArray(Bb.OurSpawns).Or(Bb.TheirSpawns);
-        var path = Pather.AStar(starts, p => goals.Contains(p), impassable.Not(), (c, n) => Bb.Water.Get(n) || Bb.Trenches.Get(n) ? 0 : 1, p => 0);
-        return path.Where(p => !(Bb.Water.Get(p) || starts.Contains(p) || goals.Contains(p)));
+        var impassable = new BitArray(Bb.OurSpawns).Or(Bb.TheirSpawns).Or(Bb.OurPumps).Or(Bb.TheirPumps);
+        var path = Pather.AStar(starts, p => goals.Contains(p), impassable.Not(), (c, n) => digworthy.Get(n) ? 1 : 0, p => 0);
+        return path.Where(p => digworthy.Get(p));
     }
 
     public static bool Dig(Unit digger, IEnumerable<Point> targets, BitArray diggable)
@@ -28,30 +37,38 @@ public static class Digger
         return false;
     }
 
-    public static void MoveAndDig(Unit digger, IEnumerable<Point> targets)
+    public static bool MoveAndDig(Unit digger, IEnumerable<Point> targets)
     {
-        var diggable = new BitArray(Bb.OurPumps).Or(Bb.TheirPumps).Or(Bb.Glaciers).Or(Bb.OurSpawns).Or(Bb.TheirSpawns).Not();
-        if (Dig(digger, targets, diggable))
+        var digworhty = GetDiggableAndUnDug();
+        if (Dig(digger, targets, digworhty))
         {
-            return;
+            return true;
         }
 
         if (digger.MovementLeft == 0)
         {
-            return;
+            return false;
         }
 
         var steps = Solver.GetWalkingSteps(digger.ToPoint(), targets.ToBitArray());
         if (steps == null)
         {
-            return;
+            return false;
         }
         var target = steps.Last.Value;
         steps.RemoveLast();
         foreach (var step in steps)
         {
-            digger.move(step.x, step.y);
+            if (digger.MovementLeft > 0)
+            {
+                digger.move(step.x, step.y);
+            }
+            else
+            {
+                return false;
+            }
         }
         digger.dig(Bb.tileLookup[target]);
+        return true;
     }
 }
