@@ -51,4 +51,16 @@ public static class Extensions
             action(s);
         }
     }
+
+    public static Point ToPoint(this Mappable mappable)
+    {
+        return new Point(mappable.X, mappable.Y);
+    }
+
+    public static BitArray ToBitArray(this IEnumerable<Point> points)
+    {
+        var bits = new BitArray(Bb.size);
+        points.ForEach(p => bits.Set(p, true));
+        return bits;
+    }
 }
