@@ -17,6 +17,8 @@ public static class Bb
     public static int usId;
     public static int themId;
 
+    public static BitArray Truth;
+
     public static BitArray Glaciers;
     public static BitArray Trenches;
     public static BitArray Water;
@@ -58,6 +60,8 @@ public static class Bb
         size = (maxX + 1) * (maxY + 1);
         usId = ai.playerID();
         themId = 1 - ai.playerID();
+
+        Truth = new BitArray(size).Not();
 
         Reset();
 

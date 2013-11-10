@@ -11,44 +11,51 @@ public static class Solver
         return Math.Abs(p1.x - p2.x) + Math.Abs(p1.y - p2.y);
     }
 
-    public static BitArray GetPassable()
+    public static BitArray GetPassable(bool walkInWater = false)
     {
+        var impassible = new BitArray(Bb.Glaciers).Or(Bb.TheirSpawns).Or(Bb.TheirUnits).Or(Bb.OurUnits);
+        if (!walkInWater)
+        {
+            impassible.Or(Bb.Water);
+        }
         var spawning = Bb.OurSpawnSet.Union(Bb.OurPumpSet.Union(Bb.TheirPumpSet).SelectMany(pump => pump.GetPoints())).Where(p => Bb.tileLookup[p].IsSpawning);
-        return spawning.ToBitArray().Or(Bb.Water).Or(Bb.Glaciers).Or(Bb.TheirSpawns).Or(Bb.TheirUnits).Or(Bb.OurUnits).Not();
+        return spawning.ToBitArray().Or(impassible).Not();
     }
 
-    public static void Move(Unit unit, BitArray goals, bool nextTo = false)
+    public static LinkedList<Point> GetWalkingSteps(Point p, BitArray goals, bool walkInWater = false)
     {
-        Bb.ReadBoard();
-
-        var steps = unit.MovementLeft;
-        if (steps == 0)
-        {
-            return;
-        }
-
-        Point[] starts = { unit.ToPoint() };
-        var passable = GetPassable();
-        passable.Set(unit, true);
+        Point[] starts = { p };
+        var passable = Solver.GetPassable(walkInWater);
+        passable.Set(p, true);
         var route = Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0);
         if (route == null)
         {
+            return null;
+        }
+        var steps = new LinkedList<Point>(route);
+        steps.RemoveFirst();
+        return steps;
+    }
+
+    public static void Move(Unit unit, BitArray goals)
+    {
+        Bb.ReadBoard();
+
+        var stepCount = unit.MovementLeft;
+        if (stepCount == 0)
+        {
             return;
         }
-        bool first = true;
-        foreach (Point p in route)
+
+        var steps = GetWalkingSteps(unit.ToPoint(), goals);
+        foreach (Point p in steps)
         {
-            if (steps == 0)
+            if (stepCount == 0)
             {
                 return;
             }
-            if (first)
-            {
-                first = false;
-                continue;
-            }
             unit.move(p.x, p.y);
-            steps--;
+            stepCount--;
         }
     }
 
@@ -61,21 +68,72 @@ public static class Solver
         return Pather.AStar(starts, p => goals.Get(p), passable, (c, n) => 1, p => 0) != null;
     }
 
-    public static void Attack(Unit attacker)
+    public static bool Attack(Unit attacker)
     {
-        var target = Bb.TheirUnitsSet.FirstOrDefault(t => t.HealthLeft > 0 && Manhattan(attacker.ToPoint(), t.ToPoint()) < attacker.Range);
+        return Attack(attacker, Bb.TheirUnitsSet);
+    }
+
+    public static bool Attack(Unit attacker, IEnumerable<Unit> targets)
+    {
+        var target = targets.FirstOrDefault(t => t.HealthLeft > 0 && Manhattan(attacker.ToPoint(), t.ToPoint()) < attacker.Range);
         if (target != null)
         {
             attacker.attack(target);
+            return true;
         }
+        return false;
     }
 
     public static void MoveAndAttack(Unit attacker, IEnumerable<Unit> targets)
     {
-        var targetBb = targets.Select(t => t.ToPoint()).ToBitArray();
-        var passable = GetPassable();
-        passable.Or(targetBb);
-        passable.Set(attacker, true);
-        Move(attacker, targetBb);
+        if (Attack(attacker, targets))
+        {
+            return;
+        }
+
+        if (attacker.MovementLeft == 0)
+        {
+            return;
+        }
+
+        var steps = GetWalkingSteps(attacker.ToPoint(), targets.Select(t => t.ToPoint()).ToBitArray());
+        foreach (var step in steps)
+        {
+            attacker.move(step.x, step.y);
+            if (Attack(attacker, targets) || attacker.MovementLeft == 0)
+            {
+                return;
+            }
+        }
+    }
+
+    public static void Dig(Unit digger, IEnumerable<Point> targets)
+    {
+        Pather.GetNeighbors(digger.ToPoint(), 
+    }
+
+    public static void MoveAndDig(Unit digger, IEnumerable<Point> targets)
+    {
+        var diggable = 
+        Pather.GetNeighbors(
+        if (Attack(attacker, targets))
+        {
+            return;
+        }
+
+        if (attacker.MovementLeft == 0)
+        {
+            return;
+        }
+
+        var steps = GetWalkingSteps(attacker.ToPoint(), targets.Select(t => t.ToPoint()).ToBitArray());
+        foreach (var step in steps)
+        {
+            attacker.move(step.x, step.y);
+            if (Attack(attacker, targets) || attacker.MovementLeft == 0)
+            {
+                return;
+            }
+        }
     }
 }
